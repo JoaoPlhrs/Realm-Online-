@@ -1,0 +1,3053 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚔️ REALM ONLINE - RPG Multiplayer</title>
+    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            background: #0a0a0a;
+            color: white;
+            cursor: none;
+        }
+
+        #cursor {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        .crosshair {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: #f0a500;
+            box-shadow: 0 0 10px #f0a500;
+        }
+
+        .crosshair::before {
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            transform: translateX(-50%);
+        }
+
+        .crosshair::after {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .crosshair-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: #f0a500;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 5px #f0a500;
+        }
+
+        #menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: default;
+        }
+
+        #menu.hidden {
+            display: none;
+        }
+
+        .logo {
+            font-size: 4em;
+            font-weight: bold;
+            color: #f0a500;
+            text-shadow: 0 0 30px rgba(240, 165, 0, 0.8);
+            margin-bottom: 20px;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 30px rgba(240, 165, 0, 0.8); }
+            50% { text-shadow: 0 0 50px rgba(240, 165, 0, 1); }
+        }
+
+        .menu-container {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid #f0a500;
+            box-shadow: 0 0 40px rgba(240, 165, 0, 0.3);
+            min-width: 500px;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #f0a500;
+            font-weight: bold;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #f0a500;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 1em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #f0a500 0%, #e67e22 100%);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(240, 165, 0, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #555 0%, #333 100%);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            width: auto;
+            margin: 0;
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .btn-select {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .class-card {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #555;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            position: relative;
+        }
+
+        .class-card:hover {
+            border-color: #f0a500;
+            background: rgba(240, 165, 0, 0.1);
+            transform: scale(1.05);
+        }
+
+        .class-card.selected {
+            border-color: #f0a500;
+            background: rgba(240, 165, 0, 0.2);
+            box-shadow: 0 0 20px rgba(240, 165, 0, 0.5);
+        }
+
+        .class-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #666;
+        }
+
+        .class-card.locked:hover {
+            transform: none;
+            border-color: #666;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .class-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .class-name {
+            font-weight: bold;
+            color: #f0a500;
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+
+        .class-desc {
+            font-size: 0.75em;
+            color: #aaa;
+        }
+
+        .class-requirement {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e74c3c;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+
+        .class-requirement.unlocked {
+            background: #2ecc71;
+        }
+
+        .character-slot {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #555;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .character-slot:hover {
+            border-color: #f0a500;
+            background: rgba(240, 165, 0, 0.1);
+        }
+
+        .character-slot.empty {
+            border-style: dashed;
+            justify-content: center;
+            color: #666;
+        }
+
+        .character-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .character-icon {
+            font-size: 3em;
+        }
+
+        .character-details {
+            text-align: left;
+        }
+
+        .character-name {
+            font-size: 1.3em;
+            color: #f0a500;
+            font-weight: bold;
+        }
+
+        .character-stats {
+            color: #aaa;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .character-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .stats-display {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px solid #f0a500;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .stat-label {
+            color: #f0a500;
+        }
+
+        .stat-value {
+            color: lime;
+            font-weight: bold;
+        }
+
+        #gameCanvas {
+            display: none;
+            image-rendering: pixelated;
+        }
+
+        #gameCanvas.active {
+            display: block;
+        }
+
+        #hud {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: none;
+            z-index: 100;
+        }
+
+        #hud.active {
+            display: block;
+        }
+
+        .player-info {
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #f0a500;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            min-width: 280px;
+        }
+
+        .player-name {
+            font-size: 1.2em;
+            color: #f0a500;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .stat-bar {
+            margin: 8px 0;
+        }
+
+        .bar-container {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #333;
+            border-radius: 5px;
+            height: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .hp-bar {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+
+        .mp-bar {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+        }
+
+        .xp-bar {
+            background: linear-gradient(90deg, #f39c12, #e67e22);
+        }
+
+        .player-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+
+        .mini-stat {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #444;
+        }
+
+        .mini-stat-value {
+            color: lime;
+            font-weight: bold;
+        }
+
+        .stat-capped {
+            color: #ff6b6b !important;
+        }
+
+        #bossTimer {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(139, 0, 0, 0.9);
+            border: 3px solid #ff0000;
+            border-radius: 15px;
+            padding: 15px 30px;
+            display: none;
+            z-index: 150;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.8);
+            animation: pulse 2s infinite;
+        }
+
+        #bossTimer.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(255, 0, 0, 0.8); }
+            50% { box-shadow: 0 0 50px rgba(255, 0, 0, 1); }
+        }
+
+        .boss-timer-title {
+            font-size: 0.9em;
+            color: #ffcccc;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .boss-timer-time {
+            font-size: 2em;
+            color: #ff0000;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .boss-warning {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(139, 0, 0, 0.95);
+            border: 5px solid #ff0000;
+            border-radius: 20px;
+            padding: 40px;
+            display: none;
+            z-index: 2000;
+            text-align: center;
+            box-shadow: 0 0 100px rgba(255, 0, 0, 1);
+            animation: bossAppear 1s;
+        }
+
+        @keyframes bossAppear {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .boss-warning h1 {
+            font-size: 4em;
+            color: #ff0000;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ff0000;
+        }
+
+        .boss-warning p {
+            font-size: 1.5em;
+            color: #ffcccc;
+        }
+
+        #deathScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            flex-direction: column;
+        }
+
+        #deathScreen.active {
+            display: flex;
+        }
+
+        .death-content {
+            text-align: center;
+            animation: deathAppear 1s;
+        }
+
+        @keyframes deathAppear {
+            0% { opacity: 0; transform: scale(0.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .death-content h1 {
+            font-size: 5em;
+            color: #e74c3c;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px #e74c3c;
+        }
+
+        .death-content p {
+            font-size: 1.5em;
+            color: #aaa;
+            margin: 10px 0;
+        }
+
+        .death-penalty {
+            background: rgba(231, 76, 60, 0.2);
+            border: 2px solid #e74c3c;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .death-penalty h3 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+
+        #inventory {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #f0a500;
+            border-radius: 10px;
+            padding: 15px;
+            display: none;
+            z-index: 100;
+        }
+
+        #inventory.active {
+            display: block;
+        }
+
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 50px);
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .inventory-slot {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #555;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .inventory-slot:hover {
+            border-color: #f0a500;
+            background: rgba(240, 165, 0, 0.1);
+            transform: scale(1.1);
+        }
+
+        .inventory-slot.has-item {
+            border-color: #4CAF50;
+        }
+
+        .item-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #f0a500;
+            padding: 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            margin-bottom: 5px;
+            font-size: 0.7em;
+            z-index: 1000;
+            min-width: 150px;
+        }
+
+        .inventory-slot:hover .item-tooltip {
+            display: block;
+        }
+
+        #skills {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            z-index: 100;
+        }
+
+        #skills.active {
+            display: flex;
+            gap: 10px;
+        }
+
+        .skill-slot {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #f0a500;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .skill-slot:hover {
+            background: rgba(240, 165, 0, 0.2);
+            box-shadow: 0 0 20px rgba(240, 165, 0, 0.5);
+        }
+
+        .skill-icon {
+            font-size: 2em;
+        }
+
+        .skill-key {
+            font-size: 0.7em;
+            color: #aaa;
+            margin-top: 2px;
+        }
+
+        .skill-cooldown {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            border-radius: 8px;
+        }
+
+        #chat {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            width: 400px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #f0a500;
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            z-index: 100;
+        }
+
+        #chat.active {
+            display: block;
+        }
+
+        .chat-messages {
+            height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            word-wrap: break-word;
+        }
+
+        .chat-message {
+            margin: 5px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            word-break: break-word;
+        }
+
+        .chat-message.system {
+            color: #f0a500;
+            font-style: italic;
+        }
+
+        .chat-message.loot {
+            color: #2ecc71;
+        }
+
+        .chat-message.boss {
+            color: #ff0000;
+            font-weight: bold;
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        .chat-message.death {
+            color: #e74c3c;
+            font-weight: bold;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .chat-message.command {
+            color: #9b59b6;
+            font-weight: bold;
+            background: rgba(155, 89, 182, 0.1);
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 5px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-family: 'Courier New', monospace;
+        }
+
+        .chat-input button {
+            padding: 8px 15px;
+            background: #f0a500;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #playersList {
+            position: fixed;
+            top: 350px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #f0a500;
+            border-radius: 10px;
+            padding: 15px;
+            display: none;
+            z-index: 100;
+            min-width: 280px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #playersList.active {
+            display: block;
+        }
+
+        .player-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-level {
+            background: #f0a500;
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .damage-number {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.2em;
+            pointer-events: none;
+            animation: damageFloat 1s ease-out forwards;
+            z-index: 200;
+        }
+
+        @keyframes damageFloat {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        .damage-number.critical {
+            color: #ff0000;
+            font-size: 1.8em;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .damage-number.heal {
+            color: #2ecc71;
+        }
+
+        .room-code-display {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px solid #f0a500;
+        }
+
+        .room-code {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1.3em;
+            letter-spacing: 3px;
+            text-align: center;
+            margin: 10px 0;
+            user-select: all;
+            word-break: break-all;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #f0a500;
+            border-radius: 4px;
+        }
+
+        .status {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px solid #f0a500;
+            z-index: 1001;
+            display: none;
+        }
+
+        .status.active {
+            display: block;
+        }
+
+        .status.error {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.9);
+        }
+
+        .status.success {
+            border-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.9);
+        }
+
+        #exitButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: 2px solid #c0392b;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            z-index: 150;
+            transition: all 0.3s;
+        }
+
+        #exitButton.active {
+            display: block;
+        }
+
+        #exitButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
+        }
+
+        .max-level-notice {
+            background: rgba(46, 204, 113, 0.2);
+            border: 2px solid #2ecc71;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .max-level-notice h3 {
+            color: #2ecc71;
+            margin-bottom: 10px;
+        }
+
+        .special-requirement {
+            background: rgba(155, 89, 182, 0.2);
+            border: 2px solid #9b59b6;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div id="cursor">
+        <div class="crosshair">
+            <div class="crosshair-dot"></div>
+        </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div id="bossTimer">
+        <div class="boss-timer-title" id="bossTimerTitle">👹 PRÓXIMO BOSS</div>
+        <div class="boss-timer-time" id="bossTimerDisplay">5:00</div>
+    </div>
+
+    <div id="bossWarning" class="boss-warning">
+        <h1 id="bossWarningTitle">👹 BOSS APARECEU! 👹</h1>
+        <p id="bossWarningText">Prepare-se para a batalha!</p>
+    </div>
+
+    <div id="deathScreen">
+        <div class="death-content">
+            <h1>💀 VOCÊ MORREU 💀</h1>
+            <p id="deathMessage">Você foi derrotado...</p>
+            <div class="death-penalty">
+                <h3>⚠️ PENALIDADE DE MORTE SEVERA</h3>
+                <p style="color: #ff6b6b;">Level reduzido para 20% do anterior</p>
+                <p style="color: #ff6b6b;">ATK e DEF resetados para 1</p>
+                <p style="color: #aaa; font-size: 0.9em; margin-top: 10px;">SPD: volta ao base da classe</p>
+            </div>
+            <button class="btn" onclick="respawn()" style="max-width: 300px; margin: 20px auto;">🔄 RENASCER</button>
+        </div>
+    </div>
+
+    <button id="exitButton" onclick="confirmExit()">🚪 SAIR DA PARTIDA</button>
+
+    <div id="menu">
+        <div class="logo">⚔️ REALM ONLINE</div>
+        <div class="menu-container">
+            
+            <div id="characterMenu">
+                <h2 style="color: #f0a500; text-align: center; margin-bottom: 20px;">👤 SELECIONE SEU PERSONAGEM</h2>
+                <div id="characterSlots"></div>
+            </div>
+
+            <div id="createCharacterMenu" style="display: none;">
+                <h2 style="color: #f0a500; text-align: center; margin-bottom: 20px;">✨ CRIAR PERSONAGEM</h2>
+                
+                <div class="input-group">
+                    <label>Nome do Personagem:</label>
+                    <input type="text" id="characterName" placeholder="Seu nome..." maxlength="15" value="">
+                </div>
+
+                <div class="input-group">
+                    <label>Escolha sua Classe:</label>
+                    <div id="classCardsContainer" class="class-grid"></div>
+                </div>
+
+                <div class="stats-display" id="classStatsPreview">
+                    <h3 style="color: #f0a500; margin-bottom: 10px;">📊 Atributos Iniciais:</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">❤️ HP:</span>
+                        <span class="stat-value" id="previewHP">150</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">💙 MP:</span>
+                        <span class="stat-value" id="previewMP">30</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">⚔️ Ataque:</span>
+                        <span class="stat-value" id="previewATK">1</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">🛡️ Defesa:</span>
+                        <span class="stat-value" id="previewDEF">1</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">⚡ Velocidade:</span>
+                        <span class="stat-value" id="previewSPD">3</span>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="createCharacter()">✨ CRIAR PERSONAGEM</button>
+                <button class="btn btn-secondary" onclick="showCharacterMenu()">← VOLTAR</button>
+            </div>
+
+            <div id="mainMenu" style="display: none;">
+                <h2 style="color: #f0a500; text-align: center; margin-bottom: 20px;">🌍 MULTIPLAYER</h2>
+                
+                <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                    <p style="color: cyan;">Personagem Selecionado:</p>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+                        <span style="font-size: 2.5em;" id="selectedCharIcon">⚔️</span>
+                        <div style="text-align: left;">
+                            <p style="color: #f0a500; font-size: 1.2em; font-weight: bold;" id="selectedCharName">Guerreiro</p>
+                            <p style="color: #aaa; font-size: 0.9em;">Nível <span id="selectedCharLevel">1</span> - <span id="selectedCharClass">Guerreiro</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn" onclick="createWorld()">🎮 CRIAR MUNDO</button>
+                <button class="btn" onclick="showJoinMenu()">➕ ENTRAR EM MUNDO</button>
+                <button class="btn btn-secondary" onclick="showCharacterMenu()">← TROCAR PERSONAGEM</button>
+            </div>
+
+            <div id="hostMenu" style="display: none;">
+                <h2 style="color: #f0a500; text-align: center; margin-bottom: 20px;">🌍 SEU MUNDO</h2>
+                
+                <div class="room-code-display">
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <strong style="color: #f0a500;">Código do Mundo:</strong>
+                    </div>
+                    <div class="room-code" id="worldCode">-</div>
+                    <div style="text-align: center; font-size: 0.9em; color: #aaa;">
+                        Compartilhe este código com seus amigos!<br>
+                        <small style="color: #666;">Cole o código completo no campo "Entrar em Mundo"</small>
+                    </div>
+                </div>
+
+                <div id="waitingPlayers" style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <strong style="color: #f0a500;">Jogadores Conectados:</strong>
+                    <div id="waitingPlayersList" style="margin-top: 10px;">
+                        Aguardando jogadores...
+                    </div>
+                </div>
+
+                <button class="btn" onclick="startGame()">▶️ INICIAR AVENTURA</button>
+                <button class="btn btn-secondary" onclick="cancelWorld()">✖️ CANCELAR</button>
+            </div>
+
+            <div id="joinMenu" style="display: none;">
+                <h2 style="color: #f0a500; text-align: center; margin-bottom: 20px;">➕ ENTRAR EM MUNDO</h2>
+                
+                <div class="input-group">
+                    <label>Código do Mundo:</label>
+                    <input type="text" id="worldCodeInput" placeholder="Cole o código completo aqui...">
+                    <small style="color: #aaa; display: block; margin-top: 5px;">
+                        ⚠️ Cole o código completo fornecido pelo host
+                    </small>
+                </div>
+
+                <button class="btn" onclick="joinWorld()">🎮 ENTRAR</button>
+                <button class="btn btn-secondary" onclick="showMainMenu()">← VOLTAR</button>
+            </div>
+
+            <div id="waitingMenu" style="display: none;">
+                <h2 style="color: #f0a500; text-align: center; margin-bottom: 20px;">⏳ AGUARDANDO...</h2>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <div style="font-size: 3em; margin-bottom: 10px;">⚔️</div>
+                    <div style="color: #aaa;">Conectado ao mundo!</div>
+                    <div style="color: #f0a500; margin-top: 10px;">Aguardando o mestre iniciar a aventura...</div>
+                </div>
+
+                <div id="joinedPlayersList" style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    Carregando...
+                </div>
+
+                <button class="btn btn-secondary" onclick="leaveWorld()">← SAIR</button>
+            </div>
+
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="hud">
+        <div class="player-info">
+            <div class="player-name" id="playerNameDisplay">Hero - Lvl 1</div>
+            
+            <div class="stat-bar">
+                <div class="stat-label">❤️ HP: <span id="hpText">100/100</span></div>
+                <div class="bar-container">
+                    <div class="bar-fill hp-bar" id="hpBar" style="width: 100%;">100%</div>
+                </div>
+            </div>
+
+            <div class="stat-bar">
+                <div class="stat-label">💙 MP: <span id="mpText">50/50</span></div>
+                <div class="bar-container">
+                    <div class="bar-fill mp-bar" id="mpBar" style="width: 100%;">100%</div>
+                </div>
+            </div>
+
+            <div class="stat-bar">
+                <div class="stat-label">⭐ XP: <span id="xpText">0/100</span></div>
+                <div class="bar-container">
+                    <div class="bar-fill xp-bar" id="xpBar" style="width: 0%;">0%</div>
+                </div>
+            </div>
+
+            <div class="player-stats">
+                <div class="mini-stat">
+                    ⚔️ ATK: <span class="mini-stat-value" id="atkDisplay">1</span>
+                </div>
+                <div class="mini-stat">
+                    🛡️ DEF: <span class="mini-stat-value" id="defDisplay">1</span>
+                </div>
+                <div class="mini-stat">
+                    ⚡ SPD: <span class="mini-stat-value" id="spdDisplay">3</span>
+                </div>
+                <div class="mini-stat">
+                    👤 Lvl: <span class="mini-stat-value" id="lvlDisplay">1</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="skills">
+        <div class="skill-slot" onclick="useSkill(0)">
+            <div class="skill-icon" id="skillIcon0">⚔️</div>
+            <div class="skill-key">1</div>
+            <div class="skill-cooldown" id="cooldown0">3</div>
+        </div>
+        <div class="skill-slot" onclick="useSkill(1)">
+            <div class="skill-icon" id="skillIcon1">🔥</div>
+            <div class="skill-key">2</div>
+            <div class="skill-cooldown" id="cooldown1">5</div>
+        </div>
+        <div class="skill-slot" onclick="useSkill(2)">
+            <div class="skill-icon" id="skillIcon2">💚</div>
+            <div class="skill-key">3</div>
+            <div class="skill-cooldown" id="cooldown2">8</div>
+        </div>
+        <div class="skill-slot" onclick="useSkill(3)">
+            <div class="skill-icon" id="skillIcon3">⚡</div>
+            <div class="skill-key">4</div>
+            <div class="skill-cooldown" id="cooldown3">10</div>
+        </div>
+    </div>
+
+    <div id="inventory">
+        <h3 style="color: #f0a500; margin-bottom: 10px;">🎒 Inventário</h3>
+        <div class="inventory-grid" id="inventoryGrid"></div>
+    </div>
+
+    <div id="playersList">
+        <h3 style="color: #f0a500; margin-bottom: 10px;">👥 Jogadores Online</h3>
+        <div id="playersListContent"></div>
+    </div>
+
+    <div id="chat">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Digite sua mensagem ou comando..." onkeypress="if(event.key==='Enter')sendMessage()">
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const cursor = document.getElementById('cursor');
+        let mouseX = 0;
+        let mouseY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursor.style.left = mouseX - 15 + 'px';
+            cursor.style.top = mouseY - 15 + 'px';
+        });
+
+        // ===== 27 CLASSES TOTAIS =====
+        const CLASSES = {
+            // BÁSICAS (15)
+            warrior: { icon: '⚔️', emoji: '🧔', name: 'Guerreiro', hp: 150, mp: 30, speed: 3, skills: ['⚔️', '🛡️', '💪', '⚡'], advanced: false },
+            mage: { icon: '🔮', emoji: '🧙', name: 'Mago', hp: 80, mp: 100, speed: 2.5, skills: ['🔥', '❄️', '⚡', '🌟'], advanced: false },
+            archer: { icon: '🏹', emoji: '🧝', name: 'Arqueiro', hp: 100, mp: 50, speed: 4, skills: ['🏹', '💨', '🎯', '🌀'], advanced: false },
+            healer: { icon: '✨', emoji: '👼', name: 'Clérigo', hp: 90, mp: 80, speed: 3, skills: ['💚', '✨', '🛡️', '🌟'], advanced: false },
+            assassin: { icon: '🗡️', emoji: '🥷', name: 'Assassino', hp: 85, mp: 40, speed: 4.5, skills: ['🗡️', '💨', '💀', '👻'], advanced: false },
+            paladin: { icon: '🛡️', emoji: '🦸', name: 'Paladino', hp: 140, mp: 60, speed: 2.5, skills: ['🛡️', '✝️', '💚', '⚡'], advanced: false },
+            necromancer: { icon: '💀', emoji: '🧟', name: 'Necromante', hp: 70, mp: 90, speed: 2, skills: ['💀', '☠️', '👻', '🌑'], advanced: false },
+            druid: { icon: '🌿', emoji: '🧚', name: 'Druida', hp: 95, mp: 70, speed: 3.5, skills: ['🌿', '🌸', '🐻', '🌊'], advanced: false },
+            berserker: { icon: '🪓', emoji: '🦍', name: 'Berserker', hp: 130, mp: 20, speed: 3.5, skills: ['🪓', '💢', '🔥', '⚡'], advanced: false },
+            monk: { icon: '🥋', emoji: '👨‍🦲', name: 'Monge', hp: 110, mp: 60, speed: 4.5, skills: ['👊', '🌀', '⚡', '🔥'], advanced: false },
+            ranger: { icon: '🎯', emoji: '🏹', name: 'Patrulheiro', hp: 105, mp: 55, speed: 4.2, skills: ['🏹', '🐺', '🌲', '💨'], advanced: false },
+            bard: { icon: '🎵', emoji: '🎭', name: 'Bardo', hp: 95, mp: 75, speed: 3.8, skills: ['🎵', '🎶', '💫', '🌟'], advanced: false },
+            summoner: { icon: '🔮', emoji: '🧙‍♀️', name: 'Invocador', hp: 85, mp: 95, speed: 2.8, skills: ['👾', '🐉', '⚡', '🌀'], advanced: false },
+            knight: { icon: '🗡️', emoji: '⚔️', name: 'Cavaleiro', hp: 145, mp: 45, speed: 3.2, skills: ['⚔️', '🛡️', '🐴', '⚡'], advanced: false },
+            warlock: { icon: '👹', emoji: '😈', name: 'Bruxo', hp: 75, mp: 105, speed: 2.6, skills: ['🔥', '💀', '⚡', '🌑'], advanced: false },
+            
+            // AVANÇADAS LEVEL 10 (3)
+            shadow_blade: { icon: '🌙', emoji: '🌑', name: 'Lâmina Sombria', hp: 100, mp: 70, speed: 5, skills: ['🌑', '⚡', '💀', '👻'], advanced: true, requiredLevel: 10 },
+            archmage: { icon: '🔮', emoji: '🧙‍♂️', name: 'Arquimago', hp: 90, mp: 150, speed: 3, skills: ['💥', '🌟', '❄️', '🔥'], advanced: true, requiredLevel: 10 },
+            divine_knight: { icon: '⚜️', emoji: '👑', name: 'Cavaleiro Divino', hp: 180, mp: 80, speed: 3.5, skills: ['✝️', '🚀', '🛡️', '💫'], advanced: true, requiredLevel: 10, hasSpecialSkill: true },
+            
+            // BOSS KILLER (1) - Requer matar Boss 1
+            dragon_slayer: { icon: '🐲', emoji: '🗡️', name: 'Caçador de Dragões', hp: 160, mp: 90, speed: 4, skills: ['🐲', '🔥', '⚔️', '💥'], advanced: true, requiresBoss: 'dragon_king', requiredBossName: 'Rei Dragão' },
+            
+            // NOVAS CLASSES (8)
+            elementalist: { icon: '🌊', emoji: '🌀', name: 'Elementalista', hp: 95, mp: 120, speed: 3.2, skills: ['🔥', '💧', '🌪️', '⛰️'], advanced: false },
+            samurai: { icon: '⚔️', emoji: '👺', name: 'Samurai', hp: 125, mp: 50, speed: 4.3, skills: ['⚔️', '🌸', '💨', '🗡️'], advanced: false },
+            priest: { icon: '✝️', emoji: '🧑‍⚕️', name: 'Sacerdote', hp: 100, mp: 110, speed: 2.8, skills: ['✝️', '💫', '🌟', '💚'], advanced: false },
+            ninja: { icon: '🥷', emoji: '🌑', name: 'Ninja', hp: 90, mp: 65, speed: 4.5, skills: ['💨', '🗡️', '💣', '👻'], advanced: false },
+            barbarian: { icon: '🪓', emoji: '💪', name: 'Bárbaro', hp: 170, mp: 15, speed: 3.8, skills: ['🪓', '💢', '⚡', '🔨'], advanced: false },
+            enchanter: { icon: '✨', emoji: '🎭', name: 'Encantador', hp: 85, mp: 100, speed: 3.5, skills: ['✨', '💫', '🌟', '🔮'], advanced: false },
+            demon_hunter: { icon: '😈', emoji: '🏹', name: 'Caçador de Demônios', hp: 115, mp: 70, speed: 4.5, skills: ['🏹', '🔥', '😈', '⚡'], advanced: false },
+            shapeshifter: { icon: '🐺', emoji: '🌙', name: 'Metamorfo', hp: 120, mp: 80, speed: 4, skills: ['🐺', '🦅', '🐻', '🐍'], advanced: false }
+        };
+
+        const STAT_CAPS = {
+            atk: 130,
+            def: 130,
+            speed: 4.5,  // Limite normal
+            speedAdvanced: 5  // Limite para classes nível 10
+        };
+
+        const ENEMY_TYPES = {
+            goblin: { emoji: '👺', hp: 50, atk: 8, def: 2, speed: 1.5, xp: 25, color: '#8b4513', attackRange: 100, attackCooldown: 2 },
+            slime: { emoji: '🟢', hp: 30, atk: 5, def: 1, speed: 1, xp: 15, color: '#2ecc71', attackRange: 80, attackCooldown: 3 },
+            skeleton: { emoji: '💀', hp: 60, atk: 10, def: 3, speed: 1.2, xp: 30, color: '#ecf0f1', attackRange: 120, attackCooldown: 2.5 },
+            orc: { emoji: '👹', hp: 80, atk: 12, def: 5, speed: 1, xp: 40, color: '#27ae60', attackRange: 90, attackCooldown: 2 },
+            zombie: { emoji: '🧟', hp: 70, atk: 9, def: 4, speed: 0.8, xp: 35, color: '#95a5a6', attackRange: 70, attackCooldown: 2.8 },
+            ghost: { emoji: '👻', hp: 40, atk: 15, def: 0, speed: 2, xp: 50, color: '#ecf0f1', attackRange: 150, attackCooldown: 1.5 },
+            demon: { emoji: '😈', hp: 100, atk: 18, def: 8, speed: 1.5, xp: 60, color: '#8b0000', attackRange: 110, attackCooldown: 1.8 },
+            vampire: { emoji: '🧛', hp: 90, atk: 16, def: 6, speed: 2, xp: 55, color: '#800020', attackRange: 130, attackCooldown: 1.6 },
+            werewolf: { emoji: '🐺', hp: 95, atk: 20, def: 7, speed: 2.5, xp: 65, color: '#654321', attackRange: 100, attackCooldown: 1.4 },
+            spider: { emoji: '🕷️', hp: 45, atk: 11, def: 2, speed: 2, xp: 28, color: '#2c3e50', attackRange: 90, attackCooldown: 2.2 },
+            bat: { emoji: '🦇', hp: 25, atk: 6, def: 1, speed: 3, xp: 18, color: '#34495e', attackRange: 140, attackCooldown: 1.2 },
+            snake: { emoji: '🐍', hp: 35, atk: 13, def: 2, speed: 1.8, xp: 22, color: '#16a085', attackRange: 85, attackCooldown: 2.4 },
+            troll: { emoji: '👿', hp: 120, atk: 15, def: 10, speed: 0.8, xp: 70, color: '#7f8c8d', attackRange: 80, attackCooldown: 2.6 },
+            imp: { emoji: '😈', hp: 50, atk: 14, def: 3, speed: 2.2, xp: 32, color: '#c0392b', attackRange: 95, attackCooldown: 1.9 },
+            golem: { emoji: '🗿', hp: 150, atk: 10, def: 15, speed: 0.5, xp: 80, color: '#95a5a6', attackRange: 70, attackCooldown: 3 },
+            witch: { emoji: '🧙‍♀️', hp: 65, atk: 22, def: 4, speed: 1.5, xp: 45, color: '#9b59b6', attackRange: 160, attackCooldown: 1.7 },
+            mummy: { emoji: '🧟‍♂️', hp: 75, atk: 11, def: 6, speed: 1, xp: 38, color: '#d4a574', attackRange: 75, attackCooldown: 2.5 },
+            gargoyle: { emoji: '🦅', hp: 85, atk: 14, def: 9, speed: 1.3, xp: 48, color: '#7f8c8d', attackRange: 105, attackCooldown: 2.1 },
+            elemental: { emoji: '💨', hp: 70, atk: 19, def: 5, speed: 2, xp: 52, color: '#3498db', attackRange: 125, attackCooldown: 1.6 },
+            dragon_baby: { emoji: '🐲', hp: 110, atk: 25, def: 12, speed: 1.2, xp: 90, color: '#e74c3c', attackRange: 140, attackCooldown: 1.5 }
+        };
+
+        const BOSS_TYPES = {
+            dragon_king: { 
+                emoji: '🐉', 
+                hp: 500, 
+                maxHp: 500,
+                atk: 40, 
+                def: 20, 
+                speed: 2, 
+                xp: 1000,
+                color: '#8b0000',
+                name: 'REI DRAGÃO',
+                attackRange: 200,
+                attackCooldown: 1,
+                spawnTime: 300
+            },
+            titan: {
+                emoji: '⚡',
+                hp: 1000,
+                maxHp: 1000,
+                atk: 60,
+                def: 30,
+                speed: 1.5,
+                xp: 2500,
+                color: '#4a0080',
+                name: 'TITÃ DOS TROVÕES',
+                attackRange: 250,
+                attackCooldown: 0.8,
+                spawnTime: 600
+            },
+            nightmare: {
+                emoji: '👁️',
+                hp: 2000,
+                maxHp: 2000,
+                atk: 99999,
+                def: 50,
+                speed: 2.5,
+                xp: 5000,
+                color: '#000000',
+                name: 'PESADELO ETERNO',
+                attackRange: 300,
+                attackCooldown: 0.5,
+                spawnTime: 1200
+            }
+        };
+
+        const ITEM_TYPES = {
+            '🍖': { name: 'Carne', effect: 'heal', value: 30, desc: 'Restaura 30 HP', dropChance: 0.1 },
+            '🧪': { name: 'Poção de Mana', effect: 'mana', value: 20, desc: 'Restaura 20 MP', dropChance: 0.1 },
+            '⚔️': { name: 'Espada', effect: 'atk', value: 2, desc: '+2 de Ataque', dropChance: 0.1 },
+            '🛡️': { name: 'Escudo', effect: 'def', value: 2, desc: '+2 de Defesa', dropChance: 0.05 },
+            '💎': { name: 'Diamante', effect: 'xp', value: 50, desc: '+50 XP', dropChance: 0.1 },
+            '🔮': { name: 'Orbe Mágico', effect: 'atk', value: 3, desc: '+3 de Ataque Mágico', dropChance: 0.1 },
+            '📿': { name: 'Amuleto', effect: 'def', value: 3, desc: '+3 de Defesa', dropChance: 0.05 },
+            '👑': { name: 'Coroa Real', effect: 'all', value: 1, desc: '+1 em todos atributos', dropChance: 0.1 },
+            '🍎': { name: 'Maçã Dourada', effect: 'heal', value: 50, desc: 'Restaura 50 HP', dropChance: 0.1 },
+            '💊': { name: 'Elixir', effect: 'full', value: 1, desc: 'Restaura HP e MP completo', dropChance: 0.1 },
+            '⚡': { name: 'Raio Engarrafado', effect: 'speed', value: 0.5, desc: '+0.5 de Velocidade', dropChance: 0.1 },
+            '🔥': { name: 'Essência de Fogo', effect: 'atk', value: 4, desc: '+4 de Ataque', dropChance: 0.1 }
+        };
+
+        let selectedClass = 'warrior';
+        let currentCharacterSlot = null;
+        let classesUnlocked = false; // Flag para /unlock
+
+        function loadCharacters() {
+            const characters = JSON.parse(localStorage.getItem('realmCharacters') || '[]');
+            const slotsContainer = document.getElementById('characterSlots');
+            slotsContainer.innerHTML = '';
+            
+            for (let i = 0; i < 3; i++) {
+                const char = characters[i];
+                const slot = document.createElement('div');
+                
+                if (char) {
+                    slot.className = 'character-slot';
+                    slot.innerHTML = `
+                        <div class="character-info">
+                            <div class="character-icon">${CLASSES[char.class].emoji}</div>
+                            <div class="character-details">
+                                <div class="character-name">${char.name}</div>
+                                <div class="character-stats">${CLASSES[char.class].name} - Nível ${char.level}</div>
+                            </div>
+                        </div>
+                        <div class="character-actions">
+                            <button class="btn btn-small btn-select" onclick="selectCharacter(${i})">SELECIONAR</button>
+                            <button class="btn btn-small btn-delete" onclick="deleteCharacter(${i})">DELETAR</button>
+                        </div>
+                    `;
+                } else {
+                    slot.className = 'character-slot empty';
+                    slot.innerHTML = '+ CRIAR NOVO PERSONAGEM';
+                    slot.onclick = () => showCreateCharacterMenu(i);
+                }
+                
+                slotsContainer.appendChild(slot);
+            }
+        }
+
+        function getMaxLevelReached() {
+            const characters = JSON.parse(localStorage.getItem('realmCharacters') || '[]');
+            let maxLevel = 0;
+            
+            characters.forEach(char => {
+                if (char && char.level > maxLevel) {
+                    maxLevel = char.level;
+                }
+            });
+            
+            return maxLevel;
+        }
+
+        function hasBossKill(bossId) {
+            const bossKills = JSON.parse(localStorage.getItem('bossKills') || '[]');
+            return bossKills.includes(bossId) || classesUnlocked;
+        }
+
+        function registerBossKill(bossId) {
+            const bossKills = JSON.parse(localStorage.getItem('bossKills') || '[]');
+            if (!bossKills.includes(bossId)) {
+                bossKills.push(bossId);
+                localStorage.setItem('bossKills', JSON.stringify(bossKills));
+                addChatMessage('SISTEMA', `🎊 Você desbloqueou novas classes ao derrotar ${bossId}!`, 'boss');
+            }
+        }
+
+        function showCreateCharacterMenu(slot = null) {
+            currentCharacterSlot = slot;
+            document.getElementById('characterMenu').style.display = 'none';
+            document.getElementById('createCharacterMenu').style.display = 'block';
+            document.getElementById('characterName').value = '';
+            selectedClass = 'warrior';
+            
+            renderClassCards();
+            updateClassPreview('warrior');
+        }
+
+        function renderClassCards() {
+            const container = document.getElementById('classCardsContainer');
+            container.innerHTML = '';
+            
+            const maxLevel = getMaxLevelReached();
+            const canUnlockAdvanced = maxLevel >= 10 || classesUnlocked;
+            
+            Object.keys(CLASSES).forEach(classKey => {
+                const classData = CLASSES[classKey];
+                const card = document.createElement('div');
+                
+                let isLocked = false;
+                let requirementText = '';
+                
+                if (classData.advanced && classData.requiredLevel && !classesUnlocked) {
+                    isLocked = !canUnlockAdvanced;
+                    requirementText = `Lvl ${classData.requiredLevel}`;
+                }
+                
+                if (classData.requiresBoss && !classesUnlocked) {
+                    isLocked = !hasBossKill(classData.requiresBoss);
+                    requirementText = `🐉 Boss`;
+                }
+                
+                const cardClass = classKey === selectedClass ? 'class-card selected' : 'class-card';
+                const lockedClass = isLocked ? ' locked' : '';
+                
+                card.className = cardClass + lockedClass;
+                card.dataset.class = classKey;
+                
+                let requirementBadge = '';
+                if (classData.advanced || classData.requiresBoss) {
+                    const badgeClass = !isLocked ? 'class-requirement unlocked' : 'class-requirement';
+                    requirementBadge = `<div class="${badgeClass}">${requirementText}</div>`;
+                }
+                
+                let specialDesc = classData.advanced ? '⭐ AVANÇADA' : 'Classe Base';
+                if (classData.requiresBoss) {
+                    specialDesc = `🐉 ${classData.requiredBossName}`;
+                }
+                if (classData.hasSpecialSkill) {
+                    specialDesc += ' - ⚡ Investida';
+                }
+                
+                card.innerHTML = `
+                    ${requirementBadge}
+                    <div class="class-icon">${classData.icon}</div>
+                    <div class="class-name">${classData.name}</div>
+                    <div class="class-desc">${specialDesc}</div>
+                `;
+                
+                if (!isLocked) {
+                    card.onclick = function() {
+                        document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
+                        this.classList.add('selected');
+                        selectedClass = this.dataset.class;
+                        updateClassPreview(selectedClass);
+                    };
+                } else {
+                    card.onclick = function() {
+                        if (classData.requiresBoss) {
+                            showStatus(`Derrote o ${classData.requiredBossName} para desbloquear!`, 'error');
+                        } else {
+                            showStatus(`Requer nível 10! (Seu máximo: ${maxLevel})`, 'error');
+                        }
+                    };
+                }
+                
+                container.appendChild(card);
+            });
+            
+            if (canUnlockAdvanced && !classesUnlocked) {
+                const notice = document.createElement('div');
+                notice.className = 'max-level-notice';
+                notice.innerHTML = `
+                    <h3>✨ CLASSES AVANÇADAS DESBLOQUEADAS!</h3>
+                    <p style="color: #aaa;">Você alcançou nível 10!</p>
+                `;
+                container.parentElement.insertBefore(notice, container);
+            }
+            
+            if (classesUnlocked) {
+                const notice = document.createElement('div');
+                notice.className = 'max-level-notice';
+                notice.style.borderColor = '#9b59b6';
+                notice.innerHTML = `
+                    <h3 style="color: #9b59b6;">🔓 TODAS AS CLASSES DESBLOQUEADAS!</h3>
+                    <p style="color: #aaa;">Comando /unlock ativo</p>
+                `;
+                container.parentElement.insertBefore(notice, container);
+            }
+        }
+
+        function createCharacter() {
+            const name = document.getElementById('characterName').value.trim();
+            
+            if (!name) {
+                showStatus('Digite um nome para o personagem!', 'error');
+                return;
+            }
+            
+            const classData = CLASSES[selectedClass];
+            
+            if (classData.advanced && classData.requiredLevel && !classesUnlocked) {
+                const maxLevel = getMaxLevelReached();
+                if (maxLevel < 10) {
+                    showStatus('Você precisa ter um personagem nível 10!', 'error');
+                    return;
+                }
+            }
+            
+            if (classData.requiresBoss && !classesUnlocked) {
+                if (!hasBossKill(classData.requiresBoss)) {
+                    showStatus(`Derrote o ${classData.requiredBossName} primeiro!`, 'error');
+                    return;
+                }
+            }
+            
+            const characters = JSON.parse(localStorage.getItem('realmCharacters') || '[]');
+            
+            if (currentCharacterSlot === null) {
+                if (characters.length >= 3) {
+                    showStatus('Máximo de 3 personagens!', 'error');
+                    return;
+                }
+                currentCharacterSlot = characters.length;
+            }
+            
+            const newChar = {
+                name: name,
+                class: selectedClass,
+                level: 1,
+                xp: 0,
+                maxXp: 100,
+                hp: classData.hp,
+                maxHp: classData.hp,
+                mp: classData.mp,
+                maxMp: classData.mp,
+                atk: 1,  // RESETADO PARA 1
+                def: 1,  // RESETADO PARA 1
+                speed: classData.speed,
+                inventory: []
+            };
+            
+            characters[currentCharacterSlot] = newChar;
+            localStorage.setItem('realmCharacters', JSON.stringify(characters));
+            
+            showStatus('Personagem criado com sucesso!', 'success');
+            showCharacterMenu();
+        }
+
+        function selectCharacter(index) {
+            const characters = JSON.parse(localStorage.getItem('realmCharacters') || '[]');
+            const char = characters[index];
+            
+            if (!char) return;
+            
+            localStorage.setItem('selectedCharacter', JSON.stringify(char));
+            localStorage.setItem('selectedCharacterIndex', index);
+            
+            document.getElementById('selectedCharIcon').textContent = CLASSES[char.class].emoji;
+            document.getElementById('selectedCharName').textContent = char.name;
+            document.getElementById('selectedCharLevel').textContent = char.level;
+            document.getElementById('selectedCharClass').textContent = CLASSES[char.class].name;
+            
+            showMainMenu();
+        }
+
+        function deleteCharacter(index) {
+            if (!confirm('Tem certeza que deseja deletar este personagem?')) return;
+            
+            const characters = JSON.parse(localStorage.getItem('realmCharacters') || '[]');
+            characters.splice(index, 1);
+            localStorage.setItem('realmCharacters', JSON.stringify(characters));
+            loadCharacters();
+            
+            showStatus('Personagem deletado!', 'success');
+        }
+
+        function updateClassPreview(className) {
+            const stats = CLASSES[className];
+            document.getElementById('previewHP').textContent = stats.hp;
+            document.getElementById('previewMP').textContent = stats.mp;
+            document.getElementById('previewATK').textContent = 1;  // SEMPRE 1
+            document.getElementById('previewDEF').textContent = 1;  // SEMPRE 1
+            document.getElementById('previewSPD').textContent = stats.speed;
+        }
+
+        function showCharacterMenu() {
+            document.getElementById('characterMenu').style.display = 'block';
+            document.getElementById('createCharacterMenu').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('hostMenu').style.display = 'none';
+            document.getElementById('joinMenu').style.display = 'none';
+            document.getElementById('waitingMenu').style.display = 'none';
+            loadCharacters();
+        }
+
+        function showMainMenu() {
+            const selectedChar = JSON.parse(localStorage.getItem('selectedCharacter') || 'null');
+            
+            if (!selectedChar) {
+                showCharacterMenu();
+                return;
+            }
+            
+            document.getElementById('characterMenu').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
+            document.getElementById('hostMenu').style.display = 'none';
+            document.getElementById('joinMenu').style.display = 'none';
+            document.getElementById('waitingMenu').style.display = 'none';
+        }
+
+        function showJoinMenu() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('joinMenu').style.display = 'block';
+        }
+
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status active ${type}`;
+            
+            setTimeout(() => {
+                status.classList.remove('active');
+            }, 3000);
+        }
+
+        function confirmExit() {
+            if (confirm('Deseja realmente sair da partida?')) {
+                cancelWorld();
+            }
+        }
+
+        function cancelWorld() {
+            if (peer) peer.destroy();
+            location.reload();
+        }
+
+        function leaveWorld() {
+            if (peer) peer.destroy();
+            showMainMenu();
+        }
+
+        let peer = null;
+        let myId = null;
+        let isHost = false;
+        let connections = {};
+        let players = {};
+        let gameRunning = false;
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let myPlayer = null;
+        let enemies = [];
+        let items = [];
+        let projectiles = [];
+
+        const TILE_SIZE = 32;
+        const WORLD_WIDTH = 100;
+        const WORLD_HEIGHT = 100;
+
+        let bossTimer1 = 300;
+        let bossTimer2 = 600;
+        let bossTimer3 = 1200;
+        let bossTimerInterval = null;
+
+        function startBossTimer() {
+            document.getElementById('bossTimer').classList.add('active');
+            
+            bossTimerInterval = setInterval(() => {
+                bossTimer1--;
+                bossTimer2--;
+                bossTimer3--;
+                
+                let timeRemaining = 0;
+                let bossName = '';
+                
+                if (bossTimer1 > 0) {
+                    timeRemaining = bossTimer1;
+                    bossName = '👹 REI DRAGÃO';
+                } else if (bossTimer2 > 0) {
+                    timeRemaining = bossTimer2;
+                    bossName = '⚡ TITÃ';
+                } else if (bossTimer3 > 0) {
+                    timeRemaining = bossTimer3;
+                    bossName = '👁️ PESADELO';
+                }
+                
+                if (timeRemaining > 0) {
+                    const minutes = Math.floor(timeRemaining / 60);
+                    const seconds = timeRemaining % 60;
+                    document.getElementById('bossTimerDisplay').textContent = 
+                        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    document.getElementById('bossTimerTitle').textContent = `PRÓXIMO: ${bossName}`;
+                }
+                
+                if (bossTimer1 === 0) {
+                    spawnBoss('dragon_king');
+                    bossTimer1 = 300;
+                }
+                if (bossTimer2 === 0) {
+                    spawnBoss('titan');
+                    bossTimer2 = 600;
+                }
+                if (bossTimer3 === 0) {
+                    spawnBoss('nightmare');
+                    bossTimer3 = 1200;
+                }
+            }, 1000);
+        }
+
+        function spawnBoss(bossType) {
+            if (!isHost) return;
+            
+            const bossData = BOSS_TYPES[bossType];
+            
+            const boss = {
+                id: 'boss_' + bossType + '_' + Date.now(),
+                type: bossType,
+                x: WORLD_WIDTH/2 * TILE_SIZE,
+                y: WORLD_HEIGHT/2 * TILE_SIZE,
+                hp: bossData.hp,
+                maxHp: bossData.maxHp,
+                atk: bossData.atk,
+                def: bossData.def,
+                speed: bossData.speed,
+                xp: bossData.xp,
+                isBoss: true,
+                targetX: null,
+                targetY: null,
+                moveTimer: 0,
+                attackTimer: 0
+            };
+            
+            enemies.push(boss);
+            
+            showBossWarning(bossData.name);
+            
+            broadcast({
+                type: 'bossSpawn',
+                boss: boss
+            });
+            
+            const msg = bossType === 'nightmare' ? 
+                `☠️ ${bossData.name} APARECEU! CUIDADO: ELE MATA COM UM GOLPE! ☠️` :
+                `👹 ${bossData.name} APARECEU! Derrote-o para ganhar MUITA experiência!`;
+            
+            addChatMessage('SISTEMA', msg, 'boss');
+        }
+
+        function showBossWarning(bossName = 'BOSS APARECEU') {
+            const warning = document.getElementById('bossWarning');
+            document.getElementById('bossWarningTitle').textContent = `👹 ${bossName}! 👹`;
+            document.getElementById('bossWarningText').textContent = 'Prepare-se para a batalha!';
+            warning.style.display = 'block';
+            
+            setTimeout(() => {
+                warning.style.display = 'none';
+            }, 3000);
+        }
+
+        function playerDeath(killerName = 'um inimigo') {
+            if (!myPlayer) return;
+            
+            const classData = CLASSES[myPlayer.class];
+            
+            myPlayer.level = Math.max(1, Math.floor(myPlayer.level * 0.2));
+            
+            myPlayer.atk = 1;  // RESETADO PARA 1
+            myPlayer.def = 1;  // RESETADO PARA 1
+            myPlayer.speed = classData.speed;
+            
+            myPlayer.xp = 0;
+            myPlayer.maxXp = 100;
+            for (let i = 1; i < myPlayer.level; i++) {
+                myPlayer.maxXp = Math.floor(myPlayer.maxXp * 1.5);
+            }
+            
+            myPlayer.hp = myPlayer.maxHp;
+            myPlayer.mp = myPlayer.maxMp;
+            
+            document.getElementById('deathMessage').textContent = `Você foi derrotado por ${killerName}!`;
+            document.getElementById('deathScreen').classList.add('active');
+            
+            addChatMessage('SISTEMA', `💀 ${myPlayer.name} MORREU! Level: ${myPlayer.level}, Stats: 1/1`, 'death');
+            
+            broadcast({
+                type: 'playerDeath',
+                playerId: myId,
+                playerName: myPlayer.name
+            });
+            
+            saveCharacterProgress();
+            updateHUD();
+        }
+
+        function respawn() {
+            if (!myPlayer) return;
+            
+            myPlayer.x = Math.random() * WORLD_WIDTH * TILE_SIZE;
+            myPlayer.y = Math.random() * WORLD_HEIGHT * TILE_SIZE;
+            
+            document.getElementById('deathScreen').classList.remove('active');
+            
+            addChatMessage('SISTEMA', `${myPlayer.name} renasceu!`, 'system');
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function createWorld() {
+            const charData = JSON.parse(localStorage.getItem('selectedCharacter'));
+            
+            if (!charData) {
+                showStatus('Selecione um personagem primeiro!', 'error');
+                showCharacterMenu();
+                return;
+            }
+            
+            showStatus('Criando mundo...', 'success');
+
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                myId = id;
+                isHost = true;
+
+                myPlayer = createPlayer(myId, charData.name, charData.class, WORLD_WIDTH/2 * TILE_SIZE, WORLD_HEIGHT/2 * TILE_SIZE);
+                Object.assign(myPlayer, charData);
+                players[myId] = myPlayer;
+
+                document.getElementById('mainMenu').style.display = 'none';
+                document.getElementById('hostMenu').style.display = 'block';
+                document.getElementById('worldCode').textContent = id;
+
+                updateSkillIcons();
+                updateWaitingList();
+                showStatus('Mundo criado!', 'success');
+            });
+
+            peer.on('connection', (conn) => {
+                handleConnection(conn);
+            });
+
+            peer.on('error', (err) => {
+                showStatus('Erro: ' + err.message, 'error');
+            });
+        }
+
+        function joinWorld() {
+            const worldCode = document.getElementById('worldCodeInput').value.trim();
+            const charData = JSON.parse(localStorage.getItem('selectedCharacter'));
+
+            if (!charData) {
+                showStatus('Selecione um personagem primeiro!', 'error');
+                showCharacterMenu();
+                return;
+            }
+
+            if (!worldCode) {
+                showStatus('Digite o código do mundo!', 'error');
+                return;
+            }
+
+            showStatus('Conectando...', 'success');
+
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                myId = id;
+                isHost = false;
+
+                const conn = peer.connect(worldCode);
+
+                conn.on('open', () => {
+                    myPlayer = createPlayer(myId, charData.name, charData.class, Math.random() * WORLD_WIDTH * TILE_SIZE, Math.random() * WORLD_HEIGHT * TILE_SIZE);
+                    Object.assign(myPlayer, charData);
+
+                    conn.send({
+                        type: 'join',
+                        player: myPlayer
+                    });
+
+                    updateSkillIcons();
+                    document.getElementById('joinMenu').style.display = 'none';
+                    document.getElementById('waitingMenu').style.display = 'block';
+                    showStatus('Conectado!', 'success');
+                });
+
+                conn.on('data', (data) => {
+                    handleData(data, conn);
+                });
+
+                conn.on('close', () => {
+                    showStatus('Desconectado', 'error');
+                    setTimeout(showMainMenu, 2000);
+                });
+
+                connections[worldCode] = conn;
+            });
+
+            peer.on('error', (err) => {
+                showStatus('Erro ao conectar: ' + err.message, 'error');
+            });
+        }
+
+        function createPlayer(id, name, playerClass, x, y) {
+            const classData = CLASSES[playerClass];
+            return {
+                id: id,
+                name: name,
+                class: playerClass,
+                x: x,
+                y: y,
+                vx: 0,
+                vy: 0,
+                hp: classData.hp,
+                maxHp: classData.hp,
+                mp: classData.mp,
+                maxMp: classData.mp,
+                atk: 1,  // COMEÇA COM 1
+                def: 1,  // COMEÇA COM 1
+                speed: classData.speed,
+                level: 1,
+                xp: 0,
+                maxXp: 100,
+                inventory: [],
+                aimAngle: 0,
+                invulnerable: false,
+                invulnerableTimer: 0
+            };
+        }
+
+        function updateSkillIcons() {
+            if (!myPlayer) return;
+            const skills = CLASSES[myPlayer.class].skills;
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`skillIcon${i}`).textContent = skills[i];
+            }
+        }
+
+        function handleConnection(conn) {
+            conn.on('data', (data) => {
+                handleData(data, conn);
+            });
+
+            conn.on('close', () => {
+                if (players[conn.peer]) {
+                    addChatMessage('Sistema', `${players[conn.peer].name} saiu do mundo`, 'system');
+                    delete players[conn.peer];
+                }
+                delete connections[conn.peer];
+                updateWaitingList();
+                broadcast({
+                    type: 'playerLeft',
+                    playerId: conn.peer
+                });
+            });
+
+            connections[conn.peer] = conn;
+        }
+
+        function handleData(data, conn) {
+            switch(data.type) {
+                case 'join':
+                    if (isHost) {
+                        players[data.player.id] = data.player;
+                        updateWaitingList();
+
+                        conn.send({
+                            type: 'worldState',
+                            players: players,
+                            enemies: enemies,
+                            items: items
+                        });
+
+                        broadcast({
+                            type: 'playerJoined',
+                            player: data.player
+                        });
+                    }
+                    break;
+
+                case 'worldState':
+                    players = data.players;
+                    enemies = data.enemies;
+                    items = data.items;
+                    updateJoinedList();
+                    break;
+
+                case 'playerUpdate':
+                    if (players[data.playerId]) {
+                        Object.assign(players[data.playerId], data.playerData);
+                    }
+                    break;
+
+                case 'playerJoined':
+                    players[data.player.id] = data.player;
+                    addChatMessage('Sistema', `${data.player.name} entrou no mundo!`, 'system');
+                    break;
+
+                case 'playerLeft':
+                    if (players[data.playerId]) {
+                        addChatMessage('Sistema', `${players[data.playerId].name} saiu do mundo`, 'system');
+                        delete players[data.playerId];
+                    }
+                    break;
+
+                case 'playerDeath':
+                    addChatMessage('SISTEMA', `💀 ${data.playerName} morreu!`, 'death');
+                    break;
+
+                case 'chat':
+                    addChatMessage(data.playerName, data.message, data.msgType || '');
+                    break;
+
+                case 'projectile':
+                    projectiles.push(data.projectile);
+                    break;
+
+                case 'bossSpawn':
+                    enemies.push(data.boss);
+                    const bossData = BOSS_TYPES[data.boss.type];
+                    showBossWarning(bossData.name);
+                    break;
+
+                case 'command':
+                    handleCommandBroadcast(data);
+                    break;
+
+                case 'start':
+                    startGameClient();
+                    break;
+            }
+        }
+
+        function broadcast(data) {
+            Object.values(connections).forEach(conn => {
+                if (conn.open) {
+                    conn.send(data);
+                }
+            });
+        }
+
+        function updateWaitingList() {
+            const list = document.getElementById('waitingPlayersList');
+            list.innerHTML = Object.values(players).map(p => 
+                `<div style="padding: 5px; margin: 5px 0; background: rgba(240,165,0,0.1); border-radius: 5px;">
+                    ${CLASSES[p.class].emoji} ${p.name} - ${CLASSES[p.class].name}
+                </div>`
+            ).join('');
+        }
+
+        function updateJoinedList() {
+            const list = document.getElementById('joinedPlayersList');
+            list.innerHTML = Object.values(players).map(p => 
+                `<div style="padding: 5px; margin: 5px 0; background: rgba(240,165,0,0.1); border-radius: 5px;">
+                    ${CLASSES[p.class].emoji} ${p.name} - Lvl ${p.level}
+                </div>`
+            ).join('');
+        }
+
+        function startGame() {
+            if (Object.keys(players).length < 1) {
+                showStatus('Aguarde jogadores!', 'error');
+                return;
+            }
+
+            generateWorld();
+
+            broadcast({
+                type: 'start'
+            });
+
+            startGameClient();
+        }
+
+        function startGameClient() {
+            document.getElementById('menu').classList.add('hidden');
+            document.getElementById('gameCanvas').classList.add('active');
+            document.getElementById('hud').classList.add('active');
+            document.getElementById('skills').classList.add('active');
+            document.getElementById('inventory').classList.add('active');
+            document.getElementById('playersList').classList.add('active');
+            document.getElementById('chat').classList.add('active');
+            document.getElementById('exitButton').classList.add('active');
+
+            generateInventorySlots();
+            updateHUD();
+
+            gameRunning = true;
+            
+            if (isHost) {
+                startBossTimer();
+            }
+            
+            gameLoop();
+
+            addChatMessage('Sistema', 'Bem-vindo ao Realm Online!', 'system');
+            addChatMessage('Sistema', 'Comandos: /kill, /boss1, /boss2, /boss3, /unlock, /super', 'command');
+        }
+
+        function generateWorld() {
+            if (isHost) {
+                for (let i = 0; i < 50; i++) {
+                    spawnEnemy();
+                }
+                for (let i = 0; i < 80; i++) {
+                    spawnItem();
+                }
+            }
+        }
+
+        function spawnEnemy() {
+            const typeKeys = Object.keys(ENEMY_TYPES);
+            const randomType = typeKeys[Math.floor(Math.random() * typeKeys.length)];
+            const enemyData = ENEMY_TYPES[randomType];
+            
+            enemies.push({
+                id: Math.random().toString(36).substr(2, 9),
+                type: randomType,
+                x: Math.random() * WORLD_WIDTH * TILE_SIZE,
+                y: Math.random() * WORLD_HEIGHT * TILE_SIZE,
+                hp: enemyData.hp,
+                maxHp: enemyData.hp,
+                atk: enemyData.atk,
+                def: enemyData.def,
+                speed: enemyData.speed,
+                xp: enemyData.xp,
+                targetX: null,
+                targetY: null,
+                moveTimer: 0,
+                attackTimer: 0,
+                isBoss: false
+            });
+        }
+
+        function spawnItem() {
+            const itemKeys = Object.keys(ITEM_TYPES);
+            const randomItem = itemKeys[Math.floor(Math.random() * itemKeys.length)];
+            
+            items.push({
+                id: Math.random().toString(36).substr(2, 9),
+                type: randomItem,
+                x: Math.random() * WORLD_WIDTH * TILE_SIZE,
+                y: Math.random() * WORLD_HEIGHT * TILE_SIZE
+            });
+        }
+
+        function generateInventorySlots() {
+            const grid = document.getElementById('inventoryGrid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 20; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'inventory-slot';
+                slot.id = `slot${i}`;
+                slot.onclick = () => useItem(i);
+                grid.appendChild(slot);
+            }
+        }
+
+        function useItem(slotIndex) {
+            if (!myPlayer || !myPlayer.inventory[slotIndex]) return;
+            
+            const item = myPlayer.inventory[slotIndex];
+            const itemData = ITEM_TYPES[item.type];
+            
+            if (!itemData) return;
+            
+            let message = '';
+            let canUse = true;
+            
+            const speedCap = CLASSES[myPlayer.class].advanced ? STAT_CAPS.speedAdvanced : STAT_CAPS.speed;
+            
+            switch(itemData.effect) {
+                case 'heal':
+                    myPlayer.hp = Math.min(myPlayer.maxHp, myPlayer.hp + itemData.value);
+                    message = `Restaurou ${itemData.value} HP!`;
+                    showDamageNumber(myPlayer.x, myPlayer.y, itemData.value, true);
+                    break;
+                    
+                case 'mana':
+                    myPlayer.mp = Math.min(myPlayer.maxMp, myPlayer.mp + itemData.value);
+                    message = `Restaurou ${itemData.value} MP!`;
+                    break;
+                    
+                case 'atk':
+                    if (myPlayer.atk >= STAT_CAPS.atk) {
+                        message = `Ataque já está no máximo (${STAT_CAPS.atk})!`;
+                        canUse = false;
+                    } else {
+                        myPlayer.atk = Math.min(STAT_CAPS.atk, myPlayer.atk + itemData.value);
+                        message = `+${itemData.value} de Ataque!`;
+                    }
+                    break;
+                    
+                case 'def':
+                    if (myPlayer.def >= STAT_CAPS.def) {
+                        message = `Defesa já está no máximo (${STAT_CAPS.def})!`;
+                        canUse = false;
+                    } else {
+                        myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + itemData.value);
+                        message = `+${itemData.value} de Defesa!`;
+                    }
+                    break;
+                    
+                case 'speed':
+                    if (myPlayer.speed >= speedCap) {
+                        message = `Velocidade já está no máximo (${speedCap})!`;
+                        canUse = false;
+                    } else {
+                        myPlayer.speed = Math.min(speedCap, myPlayer.speed + itemData.value);
+                        message = `+${itemData.value} de Velocidade!`;
+                    }
+                    break;
+                    
+                case 'xp':
+                    gainXP(itemData.value);
+                    message = `+${itemData.value} XP!`;
+                    break;
+                    
+                case 'full':
+                    myPlayer.hp = myPlayer.maxHp;
+                    myPlayer.mp = myPlayer.maxMp;
+                    message = 'HP e MP totalmente restaurados!';
+                    showDamageNumber(myPlayer.x, myPlayer.y, 'FULL', true);
+                    break;
+                    
+                case 'all':
+                    let added = false;
+                    if (myPlayer.atk < STAT_CAPS.atk) {
+                        myPlayer.atk = Math.min(STAT_CAPS.atk, myPlayer.atk + itemData.value);
+                        added = true;
+                    }
+                    if (myPlayer.def < STAT_CAPS.def) {
+                        myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + itemData.value);
+                        added = true;
+                    }
+                    if (myPlayer.speed < speedCap) {
+                        myPlayer.speed = Math.min(speedCap, myPlayer.speed + itemData.value);
+                        added = true;
+                    }
+                    if (added) {
+                        message = `+${itemData.value} em atributos disponíveis!`;
+                    } else {
+                        message = 'Todos os atributos já estão no máximo!';
+                        canUse = false;
+                    }
+                    break;
+            }
+            
+            if (canUse) {
+                myPlayer.inventory.splice(slotIndex, 1);
+                updateInventoryDisplay();
+                saveCharacterProgress();
+            }
+            
+            addChatMessage('Sistema', `${itemData.name}: ${message}`, canUse ? 'loot' : 'system');
+            updateHUD();
+        }
+
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            keys[e.key.toLowerCase()] = true;
+
+            if (e.key >= '1' && e.key <= '4') {
+                useSkill(parseInt(e.key) - 1);
+            }
+
+            if (e.key.toLowerCase() === 'i') {
+                const inv = document.getElementById('inventory');
+                inv.style.display = inv.style.display === 'none' || !inv.style.display ? 'block' : 'none';
+            }
+
+            if (e.key.toLowerCase() === 'enter') {
+                e.preventDefault();
+                document.getElementById('chatInput').focus();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        canvas.addEventListener('click', () => {
+            if (gameRunning) {
+                attack();
+            }
+        });
+
+        function updatePlayer() {
+            if (!myPlayer) return;
+
+            if (myPlayer.invulnerable) {
+                myPlayer.invulnerableTimer--;
+                if (myPlayer.invulnerableTimer <= 0) {
+                    myPlayer.invulnerable = false;
+                }
+            }
+
+            let moved = false;
+
+            if (keys['w'] || keys['arrowup']) {
+                myPlayer.vy = -myPlayer.speed;
+                moved = true;
+            } else if (keys['s'] || keys['arrowdown']) {
+                myPlayer.vy = myPlayer.speed;
+                moved = true;
+            } else {
+                myPlayer.vy = 0;
+            }
+
+            if (keys['a'] || keys['arrowleft']) {
+                myPlayer.vx = -myPlayer.speed;
+                moved = true;
+            } else if (keys['d'] || keys['arrowright']) {
+                myPlayer.vx = myPlayer.speed;
+                moved = true;
+            } else {
+                myPlayer.vx = 0;
+            }
+
+            myPlayer.x += myPlayer.vx;
+            myPlayer.y += myPlayer.vy;
+
+            myPlayer.x = Math.max(0, Math.min(WORLD_WIDTH * TILE_SIZE - TILE_SIZE, myPlayer.x));
+            myPlayer.y = Math.max(0, Math.min(WORLD_HEIGHT * TILE_SIZE - TILE_SIZE, myPlayer.y));
+
+            const cameraX = myPlayer.x - canvas.width / 2;
+            const cameraY = myPlayer.y - canvas.height / 2;
+            const worldMouseX = mouseX + cameraX;
+            const worldMouseY = mouseY + cameraY;
+            myPlayer.aimAngle = Math.atan2(worldMouseY - myPlayer.y, worldMouseX - myPlayer.x);
+
+            players[myId] = myPlayer;
+
+            if (moved) {
+                broadcast({
+                    type: 'playerUpdate',
+                    playerId: myId,
+                    playerData: {
+                        x: myPlayer.x,
+                        y: myPlayer.y,
+                        vx: myPlayer.vx,
+                        vy: myPlayer.vy,
+                        aimAngle: myPlayer.aimAngle
+                    }
+                });
+            }
+
+            items.forEach((item, index) => {
+                const dx = item.x - myPlayer.x;
+                const dy = item.y - myPlayer.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < TILE_SIZE) {
+                    collectItem(item, index);
+                }
+            });
+        }
+
+        function collectItem(item, index) {
+            if (myPlayer.inventory.length >= 20) {
+                addChatMessage('Sistema', 'Inventário cheio!', 'system');
+                return;
+            }
+            
+            myPlayer.inventory.push(item);
+            items.splice(index, 1);
+            
+            const itemData = ITEM_TYPES[item.type];
+            addChatMessage('Sistema', `Você coletou ${itemData.name}!`, 'loot');
+            updateInventoryDisplay();
+            saveCharacterProgress();
+        }
+
+        function updateInventoryDisplay() {
+            for (let i = 0; i < 20; i++) {
+                const slot = document.getElementById(`slot${i}`);
+                if (slot) {
+                    slot.innerHTML = '';
+                    slot.classList.remove('has-item');
+                }
+            }
+            
+            myPlayer.inventory.forEach((item, index) => {
+                if (index < 20) {
+                    const slot = document.getElementById(`slot${index}`);
+                    if (slot) {
+                        const itemData = ITEM_TYPES[item.type];
+                        slot.innerHTML = `
+                            <span style="font-size: 1.5em;">${item.type}</span>
+                            <div class="item-tooltip">
+                                <strong>${itemData.name}</strong><br>
+                                ${itemData.desc}
+                            </div>
+                        `;
+                        slot.classList.add('has-item');
+                    }
+                }
+            });
+        }
+
+        function attack() {
+            const angle = myPlayer.aimAngle;
+            
+            const projectile = {
+                id: Math.random().toString(36).substr(2, 9),
+                x: myPlayer.x,
+                y: myPlayer.y,
+                vx: Math.cos(angle) * 8,
+                vy: Math.sin(angle) * 8,
+                icon: CLASSES[myPlayer.class].emoji,
+                damage: myPlayer.atk,
+                life: 100,
+                owner: myId
+            };
+
+            projectiles.push(projectile);
+
+            broadcast({
+                type: 'projectile',
+                projectile: projectile
+            });
+        }
+
+        const skillCooldowns = [0, 0, 0, 0];
+
+        function useSkill(index) {
+            if (skillCooldowns[index] > 0) return;
+
+            const skillMpCost = [10, 20, 30, 40];
+            
+            if (myPlayer.mp < skillMpCost[index]) {
+                addChatMessage('Sistema', 'MP insuficiente!', 'system');
+                return;
+            }
+
+            myPlayer.mp -= skillMpCost[index];
+
+            // HABILIDADE ESPECIAL: Investida do Cavaleiro Divino
+            if (CLASSES[myPlayer.class].hasSpecialSkill && index === 1) {
+                const angle = myPlayer.aimAngle;
+                const dashDistance = 200;
+                myPlayer.x += Math.cos(angle) * dashDistance;
+                myPlayer.y += Math.sin(angle) * dashDistance;
+                
+                myPlayer.x = Math.max(0, Math.min(WORLD_WIDTH * TILE_SIZE - TILE_SIZE, myPlayer.x));
+                myPlayer.y = Math.max(0, Math.min(WORLD_HEIGHT * TILE_SIZE - TILE_SIZE, myPlayer.y));
+                
+                addChatMessage('Sistema', '🚀 INVESTIDA DIVINA!', 'system');
+                showDamageNumber(myPlayer.x, myPlayer.y, 'DASH!', false);
+            }
+
+            const angle = myPlayer.aimAngle;
+            const skillIcon = CLASSES[myPlayer.class].skills[index];
+            
+            const projectile = {
+                id: Math.random().toString(36).substr(2, 9),
+                x: myPlayer.x,
+                y: myPlayer.y,
+                vx: Math.cos(angle) * 10,
+                vy: Math.sin(angle) * 10,
+                icon: skillIcon,
+                damage: myPlayer.atk * (2 + index),
+                life: 100,
+                owner: myId,
+                isSkill: true
+            };
+
+            projectiles.push(projectile);
+
+            broadcast({
+                type: 'projectile',
+                projectile: projectile
+            });
+
+            skillCooldowns[index] = [3, 5, 8, 10][index];
+            startCooldown(index);
+            updateHUD();
+        }
+
+        function startCooldown(index) {
+            const cooldownEl = document.getElementById(`cooldown${index}`);
+            cooldownEl.style.display = 'flex';
+            
+            const interval = setInterval(() => {
+                skillCooldowns[index]--;
+                cooldownEl.textContent = skillCooldowns[index];
+                
+                if (skillCooldowns[index] <= 0) {
+                    cooldownEl.style.display = 'none';
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        function gainXP(amount) {
+            myPlayer.xp += amount;
+            
+            while (myPlayer.xp >= myPlayer.maxXp) {
+                levelUp();
+            }
+            
+            updateHUD();
+            saveCharacterProgress();
+        }
+
+        function levelUp() {
+            myPlayer.level++;
+            myPlayer.xp -= myPlayer.maxXp;
+            myPlayer.maxXp = Math.floor(myPlayer.maxXp * 1.5);
+            myPlayer.maxHp += 20;
+            myPlayer.hp = myPlayer.maxHp;
+            myPlayer.maxMp += 10;
+            myPlayer.mp = myPlayer.maxMp;
+            
+            if (myPlayer.atk < STAT_CAPS.atk) myPlayer.atk = Math.min(STAT_CAPS.atk, myPlayer.atk + 3);
+            if (myPlayer.def < STAT_CAPS.def) myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + 2);
+
+            addChatMessage('Sistema', `🎉 LEVEL UP! Você é agora nível ${myPlayer.level}!`, 'system');
+            showDamageNumber(myPlayer.x, myPlayer.y, 'LEVEL UP!', true);
+            
+            updateHUD();
+            saveCharacterProgress();
+        }
+
+        function saveCharacterProgress() {
+            if (!myPlayer) return;
+            
+            const charIndex = localStorage.getItem('selectedCharacterIndex');
+            if (charIndex === null) return;
+            
+            const characters = JSON.parse(localStorage.getItem('realmCharacters') || '[]');
+            
+            characters[charIndex] = {
+                name: myPlayer.name,
+                class: myPlayer.class,
+                level: myPlayer.level,
+                xp: myPlayer.xp,
+                maxXp: myPlayer.maxXp,
+                hp: myPlayer.hp,
+                maxHp: myPlayer.maxHp,
+                mp: myPlayer.mp,
+                maxMp: myPlayer.maxMp,
+                atk: myPlayer.atk,
+                def: myPlayer.def,
+                speed: myPlayer.speed,
+                inventory: myPlayer.inventory
+            };
+            
+            localStorage.setItem('realmCharacters', JSON.stringify(characters));
+            localStorage.setItem('selectedCharacter', JSON.stringify(characters[charIndex]));
+        }
+
+        // ===== COMANDOS =====
+        function processCommand(command) {
+            command = command.toLowerCase().trim();
+            
+            switch(command) {
+                case '/kill':
+                    playerDeath('suicídio');
+                    addChatMessage('SISTEMA', `${myPlayer.name} usou /kill!`, 'command');
+                    broadcast({
+                        type: 'command',
+                        command: 'kill',
+                        playerName: myPlayer.name
+                    });
+                    return true;
+                    
+                case '/boss1':
+                    if (isHost) {
+                        spawnBoss('dragon_king');
+                        addChatMessage('SISTEMA', `${myPlayer.name} invocou o REI DRAGÃO!`, 'command');
+                    } else {
+                        broadcast({
+                            type: 'command',
+                            command: 'boss1',
+                            playerName: myPlayer.name
+                        });
+                    }
+                    return true;
+                    
+                case '/boss2':
+                    if (isHost) {
+                        spawnBoss('titan');
+                        addChatMessage('SISTEMA', `${myPlayer.name} invocou o TITÃ DOS TROVÕES!`, 'command');
+                    } else {
+                        broadcast({
+                            type: 'command',
+                            command: 'boss2',
+                            playerName: myPlayer.name
+                        });
+                    }
+                    return true;
+                    
+                case '/boss3':
+                    if (isHost) {
+                        spawnBoss('nightmare');
+                        addChatMessage('SISTEMA', `${myPlayer.name} invocou o PESADELO ETERNO!`, 'command');
+                    } else {
+                        broadcast({
+                            type: 'command',
+                            command: 'boss3',
+                            playerName: myPlayer.name
+                        });
+                    }
+                    return true;
+                    
+                case '/unlock':
+                    classesUnlocked = true;
+                    addChatMessage('SISTEMA', '🔓 TODAS AS CLASSES DESBLOQUEADAS!', 'command');
+                    return true;
+                    
+                case '/super':
+                    myPlayer.level = 30;
+                    myPlayer.xp = 0;
+                    myPlayer.maxXp = 10000;
+                    myPlayer.maxHp += 600;
+                    myPlayer.hp = myPlayer.maxHp;
+                    myPlayer.maxMp += 300;
+                    myPlayer.mp = myPlayer.maxMp;
+                    myPlayer.atk = Math.min(STAT_CAPS.atk, myPlayer.atk + 50);
+                    myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + 30);
+                    
+                    addChatMessage('SISTEMA', `⚡ ${myPlayer.name} usou /super e é agora LEVEL 30!`, 'command');
+                    showDamageNumber(myPlayer.x, myPlayer.y, 'SUPER!', true);
+                    updateHUD();
+                    saveCharacterProgress();
+                    return true;
+                    
+                default:
+                    return false;
+            }
+        }
+
+        function handleCommandBroadcast(data) {
+            if (!isHost) return;
+            
+            switch(data.command) {
+                case 'boss1':
+                    spawnBoss('dragon_king');
+                    addChatMessage('SISTEMA', `${data.playerName} invocou o REI DRAGÃO!`, 'command');
+                    break;
+                case 'boss2':
+                    spawnBoss('titan');
+                    addChatMessage('SISTEMA', `${data.playerName} invocou o TITÃ DOS TROVÕES!`, 'command');
+                    break;
+                case 'boss3':
+                    spawnBoss('nightmare');
+                    addChatMessage('SISTEMA', `${data.playerName} invocou o PESADELO ETERNO!`, 'command');
+                    break;
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message && myPlayer) {
+                if (message.startsWith('/')) {
+                    if (processCommand(message)) {
+                        input.value = '';
+                        return;
+                    }
+                }
+                
+                addChatMessage(myPlayer.name, message);
+                broadcast({
+                    type: 'chat',
+                    playerName: myPlayer.name,
+                    message: message
+                });
+                input.value = '';
+            }
+        }
+
+        function addChatMessage(name, message, type = '') {
+            const chatDiv = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-message ${type}`;
+            msgDiv.innerHTML = `<strong>${name}:</strong> ${message}`;
+            chatDiv.appendChild(msgDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+
+            if (chatDiv.children.length > 50) {
+                chatDiv.removeChild(chatDiv.firstChild);
+            }
+        }
+
+        function showDamageNumber(x, y, damage, isHeal = false) {
+            const cameraX = myPlayer ? myPlayer.x - canvas.width / 2 : 0;
+            const cameraY = myPlayer ? myPlayer.y - canvas.height / 2 : 0;
+            
+            const num = document.createElement('div');
+            num.className = 'damage-number' + (isHeal ? ' heal' : '');
+            num.textContent = typeof damage === 'number' ? (isHeal ? '+' : '-') + damage : damage;
+            num.style.left = (x - cameraX) + 'px';
+            num.style.top = (y - cameraY) + 'px';
+            document.body.appendChild(num);
+            setTimeout(() => num.remove(), 1000);
+        }
+
+        function updateHUD() {
+            if (!myPlayer) return;
+
+            document.getElementById('playerNameDisplay').textContent = `${myPlayer.name} - Lvl ${myPlayer.level}`;
+            
+            document.getElementById('hpText').textContent = `${Math.floor(myPlayer.hp)}/${myPlayer.maxHp}`;
+            document.getElementById('hpBar').style.width = `${(myPlayer.hp / myPlayer.maxHp) * 100}%`;
+            document.getElementById('hpBar').textContent = `${Math.floor((myPlayer.hp / myPlayer.maxHp) * 100)}%`;
+
+            document.getElementById('mpText').textContent = `${Math.floor(myPlayer.mp)}/${myPlayer.maxMp}`;
+            document.getElementById('mpBar').style.width = `${(myPlayer.mp / myPlayer.maxMp) * 100}%`;
+            document.getElementById('mpBar').textContent = `${Math.floor((myPlayer.mp / myPlayer.maxMp) * 100)}%`;
+
+            document.getElementById('xpText').textContent = `${myPlayer.xp}/${myPlayer.maxXp}`;
+            document.getElementById('xpBar').style.width = `${(myPlayer.xp / myPlayer.maxXp) * 100}%`;
+            document.getElementById('xpBar').textContent = `${Math.floor((myPlayer.xp / myPlayer.maxXp) * 100)}%`;
+
+            const atkDisplay = document.getElementById('atkDisplay');
+            const defDisplay = document.getElementById('defDisplay');
+            const spdDisplay = document.getElementById('spdDisplay');
+            
+            atkDisplay.textContent = Math.floor(myPlayer.atk);
+            defDisplay.textContent = Math.floor(myPlayer.def);
+            spdDisplay.textContent = myPlayer.speed.toFixed(1);
+            
+            const speedCap = CLASSES[myPlayer.class].advanced ? STAT_CAPS.speedAdvanced : STAT_CAPS.speed;
+            
+            atkDisplay.className = myPlayer.atk >= STAT_CAPS.atk ? 'mini-stat-value stat-capped' : 'mini-stat-value';
+            defDisplay.className = myPlayer.def >= STAT_CAPS.def ? 'mini-stat-value stat-capped' : 'mini-stat-value';
+            spdDisplay.className = myPlayer.speed >= speedCap ? 'mini-stat-value stat-capped' : 'mini-stat-value';
+            
+            document.getElementById('lvlDisplay').textContent = myPlayer.level;
+
+            if (myPlayer.mp < myPlayer.maxMp) {
+                myPlayer.mp = Math.min(myPlayer.maxMp, myPlayer.mp + 0.1);
+            }
+
+            updatePlayersList();
+        }
+
+        function updatePlayersList() {
+            const list = document.getElementById('playersListContent');
+            list.innerHTML = Object.values(players).map(p => `
+                <div class="player-item">
+                    <span>${CLASSES[p.class].emoji} ${p.name}</span>
+                    <span class="player-level">Lvl ${p.level}</span>
+                </div>
+            `).join('');
+        }
+
+        function drawGame() {
+            ctx.fillStyle = '#2d4a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cameraX = myPlayer ? myPlayer.x - canvas.width / 2 : 0;
+            const cameraY = myPlayer ? myPlayer.y - canvas.height / 2 : 0;
+
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.lineWidth = 1;
+            
+            for (let x = 0; x < WORLD_WIDTH; x++) {
+                for (let y = 0; y < WORLD_HEIGHT; y++) {
+                    const screenX = x * TILE_SIZE - cameraX;
+                    const screenY = y * TILE_SIZE - cameraY;
+
+                    if (screenX > -TILE_SIZE && screenX < canvas.width && screenY > -TILE_SIZE && screenY < canvas.height) {
+                        ctx.strokeRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+
+            // Desenhar itens
+            items.forEach(item => {
+                const screenX = item.x - cameraX;
+                const screenY = item.y - cameraY;
+                
+                if (screenX > -TILE_SIZE && screenX < canvas.width && screenY > -TILE_SIZE && screenY < canvas.height) {
+                    ctx.font = '24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(item.type, screenX, screenY);
+                }
+            });
+
+            // Desenhar inimigos
+            enemies.forEach(enemy => {
+                const enemyData = enemy.isBoss ? BOSS_TYPES[enemy.type] : ENEMY_TYPES[enemy.type];
+                const screenX = enemy.x - cameraX;
+                const screenY = enemy.y - cameraY;
+                
+                if (screenX > -TILE_SIZE && screenX < canvas.width && screenY > -TILE_SIZE && screenY < canvas.height) {
+                    ctx.font = enemy.isBoss ? '48px Arial' : '32px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(enemyData.emoji, screenX, screenY);
+
+                    // Barra de HP
+                    const barWidth = enemy.isBoss ? 80 : 40;
+                    const barHeight = 6;
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(screenX - barWidth/2, screenY - 30, barWidth, barHeight);
+                    ctx.fillStyle = 'lime';
+                    ctx.fillRect(screenX - barWidth/2, screenY - 30, barWidth * (enemy.hp / enemy.maxHp), barHeight);
+
+                    if (enemy.isBoss) {
+                        ctx.font = '12px Arial';
+                        ctx.fillStyle = 'white';
+                        ctx.strokeStyle = 'black';
+                        ctx.lineWidth = 3;
+                        ctx.strokeText(enemyData.name, screenX, screenY - 45);
+                        ctx.fillText(enemyData.name, screenX, screenY - 45);
+                    }
+                }
+            });
+
+            // Desenhar jogadores
+            Object.values(players).forEach(player => {
+                const screenX = player.x - cameraX;
+                const screenY = player.y - cameraY;
+                
+                if (screenX > -TILE_SIZE && screenX < canvas.width && screenY > -TILE_SIZE && screenY < canvas.height) {
+                    const classData = CLASSES[player.class];
+                    
+                    // Emoji do jogador
+                    ctx.font = '32px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    if (player.invulnerable && Math.floor(Date.now() / 100) % 2 === 0) {
+                        ctx.globalAlpha = 0.5;
+                    }
+                    
+                    ctx.fillText(classData.emoji, screenX, screenY);
+                    ctx.globalAlpha = 1;
+
+                    // Nome
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = player.id === myId ? '#f0a500' : 'white';
+                    ctx.strokeStyle = 'black';
+                    ctx.lineWidth = 3;
+                    ctx.strokeText(player.name, screenX, screenY - 25);
+                    ctx.fillText(player.name, screenX, screenY - 25);
+
+                    // Barra de HP
+                    const barWidth = 40;
+                    const barHeight = 6;
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(screenX - barWidth/2, screenY + 20, barWidth, barHeight);
+                    ctx.fillStyle = 'lime';
+                    ctx.fillRect(screenX - barWidth/2, screenY + 20, barWidth * (player.hp / player.maxHp), barHeight);
+
+                    // Mira (apenas jogador local)
+                    if (player.id === myId && player.aimAngle !== undefined) {
+                        ctx.strokeStyle = '#f0a500';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY);
+                        ctx.lineTo(
+                            screenX + Math.cos(player.aimAngle) * 30,
+                            screenY + Math.sin(player.aimAngle) * 30
+                        );
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            // Desenhar projéteis
+            projectiles.forEach(proj => {
+                const screenX = proj.x - cameraX;
+                const screenY = proj.y - cameraY;
+                
+                if (screenX > -50 && screenX < canvas.width + 50 && screenY > -50 && screenY < canvas.height + 50) {
+                    ctx.font = proj.isSkill ? '28px Arial' : '20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(proj.icon, screenX, screenY);
+                }
+            });
+        }
+
+        function updateEnemies() {
+            if (!isHost) return;
+
+            enemies.forEach((enemy, index) => {
+                const enemyData = enemy.isBoss ? BOSS_TYPES[enemy.type] : ENEMY_TYPES[enemy.type];
+
+                // IA simples: perseguir jogador mais próximo
+                let nearestPlayer = null;
+                let nearestDist = Infinity;
+
+                Object.values(players).forEach(player => {
+                    const dx = player.x - enemy.x;
+                    const dy = player.y - enemy.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < nearestDist) {
+                        nearestDist = dist;
+                        nearestPlayer = player;
+                    }
+                });
+
+                if (nearestPlayer) {
+                    const dx = nearestPlayer.x - enemy.x;
+                    const dy = nearestPlayer.y - enemy.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist > 50) {
+                        enemy.x += (dx / dist) * enemyData.speed;
+                        enemy.y += (dy / dist) * enemyData.speed;
+                    }
+
+                    // Atacar jogador se próximo
+                    if (dist < enemyData.attackRange) {
+                        enemy.attackTimer -= 1;
+                        if (enemy.attackTimer <= 0) {
+                            const damage = Math.max(1, enemyData.atk - nearestPlayer.def);
+                            
+                            if (!nearestPlayer.invulnerable) {
+                                nearestPlayer.hp -= damage;
+                                nearestPlayer.invulnerable = true;
+                                nearestPlayer.invulnerableTimer = 30;
+
+                                showDamageNumber(nearestPlayer.x, nearestPlayer.y, damage, false);
+
+                                if (nearestPlayer.hp <= 0) {
+                                    nearestPlayer.hp = 0;
+                                    if (nearestPlayer.id === myId) {
+                                        const killerName = enemy.isBoss ? BOSS_TYPES[enemy.type].name : ENEMY_TYPES[enemy.type].emoji;
+                                        playerDeath(killerName);
+                                    }
+                                }
+                            }
+
+                            enemy.attackTimer = enemyData.attackCooldown * 60;
+                        }
+                    }
+                }
+
+                // Remover inimigos mortos
+                if (enemy.hp <= 0) {
+                    enemies.splice(index, 1);
+                    
+                    // Boss morto - registrar kill
+                    if (enemy.isBoss) {
+                        registerBossKill(enemy.type);
+                        addChatMessage('SISTEMA', `🎉 ${BOSS_TYPES[enemy.type].name} FOI DERROTADO!`, 'boss');
+                    }
+
+                    // Spawn de itens
+                    Object.keys(ITEM_TYPES).forEach(itemType => {
+                        if (Math.random() < ITEM_TYPES[itemType].dropChance) {
+                            items.push({
+                                id: Math.random().toString(36).substr(2, 9),
+                                type: itemType,
+                                x: enemy.x + (Math.random() - 0.5) * 50,
+                                y: enemy.y + (Math.random() - 0.5) * 50
+                            });
+                        }
+                    });
+
+                    // Distribuir XP
+                    Object.values(players).forEach(player => {
+                        if (player.id === myId) {
+                            gainXP(enemy.xp);
+                        }
+                    });
+
+                    // Respawn de inimigo normal
+                    if (!enemy.isBoss) {
+                        setTimeout(() => {
+                            if (isHost) spawnEnemy();
+                        }, 5000);
+                    }
+                }
+            });
+        }
+
+        function updateProjectiles() {
+            projectiles.forEach((proj, index) => {
+                proj.x += proj.vx;
+                proj.y += proj.vy;
+                proj.life--;
+
+                if (proj.life <= 0) {
+                    projectiles.splice(index, 1);
+                    return;
+                }
+
+                // Colisão com inimigos
+                if (isHost) {
+                    enemies.forEach(enemy => {
+                        const dx = enemy.x - proj.x;
+                        const dy = enemy.y - proj.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < TILE_SIZE) {
+                            const damage = Math.max(1, proj.damage - enemy.def);
+                            enemy.hp -= damage;
+                            showDamageNumber(enemy.x, enemy.y, damage, false);
+                            projectiles.splice(index, 1);
+                        }
+                    });
+                }
+            });
+        }
+
+        let lastTime = 0;
+        function gameLoop(currentTime = 0) {
+            if (!gameRunning) return;
+
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            updatePlayer();
+            updateEnemies();
+            updateProjectiles();
+            drawGame();
+            updateHUD();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Inicializar ao carregar página
+        window.addEventListener('load', () => {
+            showCharacterMenu();
+        });
+    </script>
+</body>
+</html>
