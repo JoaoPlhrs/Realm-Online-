@@ -945,6 +945,66 @@
             margin: 10px 0;
             font-size: 0.85em;
         }
+        /* ===== RANKING & CLÃS ===== */
+        #rankingPanel {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            background: rgba(10,10,20,0.97); border: 2px solid #f0a500;
+            border-radius: 14px; padding: 24px; width: 480px;
+            max-height: 80vh; overflow-y: auto; z-index: 600; display: none;
+        }
+        #rankingPanel.active { display: block; }
+        .rank-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .rank-tab {
+            flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #555;
+            background: rgba(255,255,255,0.05); color: #aaa; cursor: pointer;
+            font-family: "Courier New",monospace; font-size: 0.9em; transition: all 0.2s;
+        }
+        .rank-tab.active { border-color: #f0a500; color: #f0a500; background: rgba(240,165,0,0.1); }
+        .rank-row {
+            display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+            border-radius: 6px; background: rgba(255,255,255,0.04); margin: 5px 0;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .rank-pos { width: 28px; font-weight: bold; color: #f0a500; text-align: center; }
+        .rank-pos.gold   { color: #FFD700; }
+        .rank-pos.silver { color: #C0C0C0; }
+        .rank-pos.bronze { color: #CD7F32; }
+        .rank-name { flex: 1; font-weight: bold; }
+        .rank-val  { color: #2ecc71; font-weight: bold; min-width: 60px; text-align: right; }
+        #clanBadge {
+            position: fixed; top: 20px; right: 180px;
+            background: rgba(0,0,0,0.85); border: 2px solid #9b59b6;
+            border-radius: 8px; padding: 6px 12px; display: none; z-index: 110;
+            font-size: 0.85em; color: #d7b4ff; font-weight: bold;
+        }
+        #clanBadge.active { display: block; }
+        /* ===== SLOT DE ARMADURA ===== */
+        #armorSlotPanel {
+            position: fixed; bottom: 100px; right: 20px;
+            background: rgba(0,0,0,0.9); border: 2px solid #f0a500;
+            border-radius: 10px; padding: 12px; display: none; z-index: 110; text-align: center;
+        }
+        #armorSlotPanel.active { display: block; }
+        .armor-slot {
+            width: 58px; height: 58px; border-radius: 8px; margin: 0 auto;
+            border: 2px dashed #555; background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8em; cursor: pointer; transition: all 0.2s; position: relative;
+        }
+        .armor-slot:hover { border-color: #f0a500; background: rgba(240,165,0,0.1); }
+        .armor-slot.equipped { border-style: solid; border-color: #2ecc71; }
+        .armor-slot-label { font-size: 0.62em; color: #aaa; margin-top: 4px; }
+        .armor-tooltip {
+            display: none; position: absolute; bottom: 110%; left: 50%;
+            transform: translateX(-50%); background: rgba(0,0,0,0.95);
+            border: 1px solid #f0a500; padding: 8px; border-radius: 6px;
+            white-space: nowrap; font-size: 0.7em; z-index: 300; min-width: 140px; text-align: left;
+        }
+        .armor-slot:hover .armor-tooltip { display: block; }
+        /* ===== CLASSE POR NÍVEL ===== */
+        .class-level-req { font-size: 0.6em; color: #f39c12; margin-top: 2px; font-weight: bold; }
+        .class-card.level-locked { opacity: 0.4; cursor: not-allowed; border-color: #444; }
+        .class-card.level-locked:hover { transform: none; border-color: #444; background: rgba(0,0,0,0.6); }
     </style>
 </head>
 <body>
@@ -981,6 +1041,33 @@
     </div>
 
     <button id="exitButton" onclick="confirmExit()">🚪 SAIR DA PARTIDA</button>
+
+    <!-- Clan badge HUD -->
+    <div id="clanBadge">🛡️ <span id="clanBadgeName">Sem Clã</span></div>
+
+    <!-- Armor Slot Panel -->
+    <div id="armorSlotPanel">
+        <div style="color:#f0a500;font-size:0.8em;margin-bottom:6px;">🛡️ Armadura</div>
+        <div class="armor-slot" id="armorSlot" onclick="unequipArmor()">
+            <span id="armorSlotIcon">➕</span>
+            <div class="armor-tooltip" id="armorTooltip">Sem armadura equipada<br><small style="color:#aaa">Itens de armadura do inventário</small></div>
+        </div>
+        <div class="armor-slot-label" id="armorSlotLabel">Vazio</div>
+    </div>
+
+    <!-- Ranking Panel -->
+    <div id="rankingPanel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h2 style="color:#f0a500;">🏆 RANKING</h2>
+            <button class="btn btn-small btn-secondary" onclick="closeRanking()" style="padding:6px 14px;">✕ Fechar</button>
+        </div>
+        <div class="rank-tabs">
+            <button class="rank-tab active" onclick="showRankTab('players',this)">👤 Jogadores</button>
+            <button class="rank-tab" onclick="showRankTab('clans',this)">🛡️ Clãs</button>
+        </div>
+        <div id="rankPlayersTab"></div>
+        <div id="rankClansTab" style="display:none;"></div>
+    </div>
 
     <div id="menu">
         <div class="logo">⚔️ REALM ONLINE</div>
@@ -1048,6 +1135,8 @@
 
                 <button class="btn" onclick="createWorld()">🎮 CRIAR MUNDO</button>
                 <button class="btn" onclick="showJoinMenu()">➕ ENTRAR EM MUNDO</button>
+                <button class="btn" onclick="showClanMenu()" style="background:linear-gradient(135deg,#9b59b6,#6c3483);color:#fff;">🛡️ GERENCIAR CLÃ</button>
+                <button class="btn" onclick="openRanking()" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#000;">🏆 RANKING</button>
                 <button class="btn btn-secondary" onclick="showCharacterMenu()">← TROCAR PERSONAGEM</button>
             </div>
 
@@ -1105,6 +1194,25 @@
                 </div>
 
                 <button class="btn btn-secondary" onclick="leaveWorld()">← SAIR</button>
+            </div>
+
+            <!-- CLÃ MENU -->
+            <div id="clanMenu" style="display:none;">
+                <h2 style="color:#9b59b6;text-align:center;margin-bottom:16px;">🛡️ GERENCIAR CLÃ</h2>
+                <div id="clanMenuContent"></div>
+                <div id="createClanForm" style="display:none;margin-top:12px;">
+                    <div class="input-group">
+                        <label>Nome do Clã (máx 20):</label>
+                        <input type="text" id="clanNameInput" placeholder="Nome do seu clã..." maxlength="20">
+                    </div>
+                    <div class="input-group">
+                        <label>Tag do Clã (3 letras):</label>
+                        <input type="text" id="clanTagInput" placeholder="EX: RPG" maxlength="3" style="text-transform:uppercase;">
+                    </div>
+                    <button class="btn" onclick="createClan()" style="background:linear-gradient(135deg,#9b59b6,#6c3483);color:#fff;">🛡️ FUNDAR CLÃ</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('createClanForm').style.display='none';renderClanMenu();">← Cancelar</button>
+                </div>
+                <button class="btn btn-secondary" style="margin-top:10px;" onclick="showMainMenu()">← VOLTAR</button>
             </div>
 
         </div>
@@ -1178,7 +1286,7 @@
     </div>
 
     <div id="inventory">
-        <h3 style="color: #f0a500; margin-bottom: 10px;">🎒 Inventário</h3>
+        <h3 style="color: #f0a500; margin-bottom: 10px;">🎒 Inventário <button onclick="openRanking()" style="float:right;background:none;border:1px solid #f0a500;color:#f0a500;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:0.7em;">🏆</button></h3>
         <div class="inventory-grid" id="inventoryGrid"></div>
     </div>
 
@@ -1367,6 +1475,276 @@
         let currentCharacterSlot = null;
         let classesUnlocked = false; // Flag para /unlock
 
+        // ===== ATAQUE BASE POR RARIDADE =====
+        // Em vez de começar em 1 fixo, o ATK inicial é definido pela raridade da classe.
+        // ATK base mínimo = 5 (common). Raridades mais altas escalam proporcionalmente.
+        const RARITY_BASE_ATK = { common: 5, rare: 8, epic: 12, special: 18, legendary: 28 };
+        const RARITY_BASE_DEF = { common: 3, rare: 5, epic:  8, special: 12, legendary: 18 };
+        function getBaseAtk(cls) { return RARITY_BASE_ATK[CLASS_RARITY[cls] || 'common'] || 1; }
+        function getBaseDef(cls) { return RARITY_BASE_DEF[CLASS_RARITY[cls] || 'common'] || 1; }
+
+        // ===== CLASSES POR NÍVEL =====
+        // Cada classe exige um nível mínimo do personagem para ser desbloqueada.
+        // Escala: common=1, rare=2, epic=4, special=7, legendary=10
+        // Nível 0 = disponível desde o início (sem requisito).
+        // Classes comuns não exigem nível para que novos jogadores (Lvl 1) possam escolher.
+        const CLASS_LEVEL_REQ = {
+            warrior:0, mage:0, archer:0, healer:0,
+            assassin:2, paladin:2, necromancer:2, druid:2, barbarian:2, elementalist:2, priest:2,
+            berserker:4, monk:4, ranger:4, bard:4, summoner:4, knight:4, warlock:4,
+            samurai:4, ninja:4, enchanter:4, shapeshifter:4,
+            shadow_blade:7, archmage:7, divine_knight:7, demon_hunter:7,
+            dragon_slayer:10
+        };
+
+        // ===== SISTEMA DE CLÃS =====
+        // Armazena clãs em localStorage: { [clanTag]: { name, tag, leader, members:[], kills:0, level:1 } }
+        function getClans() { return JSON.parse(localStorage.getItem('realmClans') || '{}'); }
+        function saveClans(c) { localStorage.setItem('realmClans', JSON.stringify(c)); }
+        function getMyCharName() {
+            const c = JSON.parse(localStorage.getItem('selectedCharacter') || 'null');
+            return c ? c.name : null;
+        }
+        function getMyCharClan() {
+            const c = JSON.parse(localStorage.getItem('selectedCharacter') || 'null');
+            return c ? (c.clan || null) : null;
+        }
+        function setMyCharClan(tag) {
+            const idx = localStorage.getItem('selectedCharacterIndex');
+            if (idx === null) return;
+            const chars = JSON.parse(localStorage.getItem('realmCharacters') || '[]');
+            if (chars[idx]) { chars[idx].clan = tag; localStorage.setItem('realmCharacters', JSON.stringify(chars)); }
+            const sel = JSON.parse(localStorage.getItem('selectedCharacter') || 'null');
+            if (sel) { sel.clan = tag; localStorage.setItem('selectedCharacter', JSON.stringify(sel)); }
+        }
+        function createClan() {
+            const name = document.getElementById('clanNameInput').value.trim();
+            const tag  = document.getElementById('clanTagInput').value.trim().toUpperCase();
+            if (!name || tag.length < 2) { showStatus('Nome e tag são obrigatórios!', 'error'); return; }
+            const clans = getClans();
+            if (clans[tag]) { showStatus('Tag já existe! Escolha outra.', 'error'); return; }
+            const leader = getMyCharName();
+            if (!leader) { showStatus('Selecione um personagem primeiro!', 'error'); return; }
+            clans[tag] = { name, tag, leader, members: [leader], kills: 0, level: 1 };
+            saveClans(clans);
+            setMyCharClan(tag);
+            showStatus(`Clã [${tag}] ${name} criado!`, 'success');
+            document.getElementById('createClanForm').style.display = 'none';
+            renderClanMenu();
+        }
+        function joinClan(tag) {
+            const clans = getClans();
+            const me = getMyCharName();
+            if (!clans[tag]) return;
+            if (clans[tag].members.includes(me)) { showStatus('Você já está neste clã.', 'error'); return; }
+            // Leave current clan first
+            const old = getMyCharClan();
+            if (old && clans[old]) {
+                clans[old].members = clans[old].members.filter(m => m !== me);
+                if (clans[old].members.length === 0) delete clans[old];
+            }
+            clans[tag].members.push(me);
+            saveClans(clans);
+            setMyCharClan(tag);
+            showStatus(`Você entrou no clã [${tag}]!`, 'success');
+            renderClanMenu();
+        }
+        function leaveClan() {
+            const me = getMyCharName();
+            const clans = getClans();
+            const tag = getMyCharClan();
+            if (!tag || !clans[tag]) return;
+            clans[tag].members = clans[tag].members.filter(m => m !== me);
+            if (clans[tag].members.length === 0) delete clans[tag];
+            else if (clans[tag].leader === me && clans[tag].members.length > 0)
+                clans[tag].leader = clans[tag].members[0];
+            saveClans(clans);
+            setMyCharClan(null);
+            showStatus('Você saiu do clã.', 'success');
+            renderClanMenu();
+        }
+        function showClanMenu() {
+            ['characterMenu','createCharacterMenu','mainMenu','hostMenu','joinMenu','waitingMenu'].forEach(
+                id => document.getElementById(id).style.display = 'none'
+            );
+            document.getElementById('clanMenu').style.display = 'block';
+            renderClanMenu();
+        }
+        function renderClanMenu() {
+            const clans = getClans();
+            const myClan = getMyCharClan();
+            const me = getMyCharName();
+            const el = document.getElementById('clanMenuContent');
+            document.getElementById('createClanForm').style.display = 'none';
+            let html = '';
+            if (myClan && clans[myClan]) {
+                const c = clans[myClan];
+                html += `<div style="background:rgba(155,89,182,0.15);border:1px solid #9b59b6;border-radius:8px;padding:12px;margin-bottom:12px;">
+                    <p style="color:#d7b4ff;font-weight:bold;">🛡️ [${c.tag}] ${c.name}</p>
+                    <p style="color:#aaa;font-size:0.85em;">Líder: ${c.leader} | Membros: ${c.members.length}</p>
+                    <p style="color:#aaa;font-size:0.85em;">Mortes: ${c.kills} | Nível do Clã: ${c.level}</p>
+                    <p style="color:#f0a500;margin-top:6px;font-size:0.85em;">Membros: ${c.members.join(', ')}</p>
+                    <button class="btn btn-small btn-delete" style="margin-top:8px;" onclick="leaveClan()">Sair do Clã</button>
+                </div>`;
+            } else {
+                html += `<p style="color:#aaa;margin-bottom:10px;">Você não pertence a nenhum clã.</p>`;
+                html += `<button class="btn" onclick="document.getElementById('createClanForm').style.display='block';" style="background:linear-gradient(135deg,#9b59b6,#6c3483);color:#fff;margin-bottom:14px;">+ Fundar Novo Clã</button>`;
+            }
+            if (Object.keys(clans).length > 0) {
+                html += `<h4 style="color:#f0a500;margin:10px 0 6px;">Clãs Existentes</h4>`;
+                Object.values(clans).forEach(c => {
+                    const isMine = myClan === c.tag;
+                    html += `<div class="rank-row">
+                        <span style="color:#9b59b6;font-weight:bold;">[${c.tag}]</span>
+                        <span style="flex:1;">${c.name} <small style="color:#aaa;">(${c.members.length} membros)</small></span>
+                        ${!isMine && me ? `<button class="btn btn-small btn-select" onclick="joinClan('${c.tag}')">Entrar</button>` : ''}
+                    </div>`;
+                });
+            }
+            el.innerHTML = html;
+        }
+        function updateClanBadge() {
+            const badge = document.getElementById('clanBadge');
+            const tag = myPlayer && myPlayer.clan ? myPlayer.clan : null;
+            if (tag) {
+                document.getElementById('clanBadgeName').textContent = `[${tag}]`;
+                badge.classList.add('active');
+            } else { badge.classList.remove('active'); }
+        }
+
+        // ===== SLOT DE ARMADURA =====
+        // Armaduras são itens do inventário com effect:'armor'. 
+        // Equipa dando +DEF e +HP; ao desequipar reverte os bônus.
+        const ARMOR_ITEMS = {
+            '🪖': { name: 'Elmo de Ferro',   defBonus: 8,  hpBonus: 30,  desc: '+8 DEF +30 HP' },
+            '🥋': { name: 'Veste de Couro',  defBonus: 5,  hpBonus: 20,  desc: '+5 DEF +20 HP' },
+            '⛑️': { name: 'Armadura Pesada', defBonus: 15, hpBonus: 60,  desc: '+15 DEF +60 HP' },
+            '🦺': { name: 'Colete Mágico',   defBonus: 10, hpBonus: 40,  desc: '+10 DEF +40 HP' },
+        };
+        // Adicionamos armaduras ao drop de itens com baixa chance
+        const ARMOR_DROP_LIST = Object.keys(ARMOR_ITEMS);
+
+        function equipArmor(inventoryIndex) {
+            if (!myPlayer) return;
+            const item = myPlayer.inventory[inventoryIndex];
+            if (!item || !ARMOR_ITEMS[item.type]) return;
+            // Desequipa anterior se houver
+            if (myPlayer.equippedArmor) unequipArmor(true);
+            const armorData = ARMOR_ITEMS[item.type];
+            myPlayer.equippedArmor = { type: item.type, defBonus: armorData.defBonus, hpBonus: armorData.hpBonus };
+            myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + armorData.defBonus);
+            myPlayer.maxHp += armorData.hpBonus;
+            myPlayer.hp = Math.min(myPlayer.maxHp, myPlayer.hp + armorData.hpBonus);
+            // Remove do inventário
+            myPlayer.inventory.splice(inventoryIndex, 1);
+            updateArmorSlot();
+            updateInventoryDisplay();
+            saveCharacterProgress();
+            addChatMessage('Sistema', `🛡️ ${armorData.name} equipada!`, 'loot');
+            updateHUD();
+        }
+        function unequipArmor(silent = false) {
+            if (!myPlayer || !myPlayer.equippedArmor) return;
+            const a = myPlayer.equippedArmor;
+            myPlayer.def = Math.max(1, myPlayer.def - a.defBonus);
+            myPlayer.maxHp = Math.max(1, myPlayer.maxHp - a.hpBonus);
+            myPlayer.hp = Math.min(myPlayer.hp, myPlayer.maxHp);
+            // Devolve ao inventário se couber
+            if (myPlayer.inventory.length < 20) myPlayer.inventory.push({ id: Math.random().toString(36).substr(2,9), type: a.type });
+            myPlayer.equippedArmor = null;
+            updateArmorSlot();
+            updateInventoryDisplay();
+            saveCharacterProgress();
+            if (!silent) { addChatMessage('Sistema', '🛡️ Armadura removida.', 'system'); updateHUD(); }
+        }
+        function updateArmorSlot() {
+            const slot = document.getElementById('armorSlot');
+            const icon = document.getElementById('armorSlotIcon');
+            const label = document.getElementById('armorSlotLabel');
+            const tooltip = document.getElementById('armorTooltip');
+            if (myPlayer && myPlayer.equippedArmor) {
+                const a = ARMOR_ITEMS[myPlayer.equippedArmor.type];
+                icon.textContent = myPlayer.equippedArmor.type;
+                label.textContent = a ? a.name : 'Equipada';
+                tooltip.innerHTML = `<strong>${a ? a.name : ''}</strong><br>${a ? a.desc : ''}<br><small style="color:#f39c12">Clique para remover</small>`;
+                slot.classList.add('equipped');
+            } else {
+                icon.textContent = '➕';
+                label.textContent = 'Vazio';
+                tooltip.innerHTML = 'Nenhuma armadura<br><small style="color:#aaa">Use itens 🪖 ⛑️ 🦺 🥋<br>do inventário</small>';
+                slot.classList.remove('equipped');
+            }
+        }
+
+        // ===== RANKING =====
+        let rankingOpen = false;
+        function openRanking() {
+            rankingOpen = true;
+            document.getElementById('rankingPanel').classList.add('active');
+            showRankTab('players', document.querySelector('.rank-tab'));
+        }
+        function closeRanking() {
+            rankingOpen = false;
+            document.getElementById('rankingPanel').classList.remove('active');
+        }
+        function showRankTab(tab, btn) {
+            document.querySelectorAll('.rank-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            document.getElementById('rankPlayersTab').style.display = tab === 'players' ? 'block' : 'none';
+            document.getElementById('rankClansTab').style.display   = tab === 'clans'   ? 'block' : 'none';
+            if (tab === 'players') renderPlayerRanking();
+            else renderClanRanking();
+        }
+        function renderPlayerRanking() {
+            // Rankings baseados em dados salvos no localStorage de TODOS os personagens criados
+            const allChars = JSON.parse(localStorage.getItem('realmCharacters') || '[]').filter(Boolean);
+            // Também inclui jogadores online na sessão atual
+            const onlinePlayers = Object.values(players || {});
+            const combined = [...allChars];
+            onlinePlayers.forEach(p => {
+                if (!combined.find(c => c.name === p.name)) combined.push(p);
+            });
+            combined.sort((a,b) => (b.level||0)-(a.level||0));
+            const medals = ['gold','silver','bronze'];
+            const el = document.getElementById('rankPlayersTab');
+            if (combined.length === 0) { el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px;">Nenhum dado ainda.</p>'; return; }
+            el.innerHTML = combined.slice(0,20).map((p,i) => {
+                const cls = CLASS_RARITY[p.class] || 'common';
+                const r = RARITY[cls] || RARITY.common;
+                const clanTag = p.clan ? `<span style="color:#9b59b6;">[${p.clan}]</span> ` : '';
+                return `<div class="rank-row">
+                    <span class="rank-pos ${medals[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
+                    <span class="rank-name">${clanTag}${p.name||'?'} <small style="color:${r.color}">${p.class||''}</small></span>
+                    <span class="rank-val">Lvl ${p.level||1}</span>
+                </div>`;
+            }).join('');
+        }
+        function renderClanRanking() {
+            const clans = getClans();
+            const list = Object.values(clans).sort((a,b)=>(b.kills||0)-(a.kills||0));
+            const medals = ['gold','silver','bronze'];
+            const el = document.getElementById('rankClansTab');
+            if (list.length === 0) { el.innerHTML = '<p style="color:#aaa;text-align:center;padding:20px;">Nenhum clã ainda.</p>'; return; }
+            el.innerHTML = list.slice(0,20).map((c,i) => `
+                <div class="rank-row">
+                    <span class="rank-pos ${medals[i]||''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
+                    <span class="rank-name"><span style="color:#9b59b6;">[${c.tag}]</span> ${c.name} <small style="color:#aaa;">${c.members.length} membros</small></span>
+                    <span class="rank-val">${c.kills||0} kills</span>
+                </div>`).join('');
+        }
+        // Incrementa kills do clã do jogador ao matar inimigos
+        function registerClanKill() {
+            const tag = myPlayer && myPlayer.clan ? myPlayer.clan : null;
+            if (!tag) return;
+            const clans = getClans();
+            if (clans[tag]) {
+                clans[tag].kills = (clans[tag].kills||0) + 1;
+                // Clã sobe de nível a cada 50 kills
+                clans[tag].level = Math.floor(clans[tag].kills / 50) + 1;
+                saveClans(clans);
+            }
+        }
+
         function loadCharacters() {
             const characters = JSON.parse(localStorage.getItem('realmCharacters') || '[]');
             const slotsContainer = document.getElementById('characterSlots');
@@ -1452,19 +1830,19 @@
                 
                 let isLocked = false;
                 let requirementText = '';
-                
-                if (classData.advanced && classData.requiredLevel && !classesUnlocked) {
-                    isLocked = !canUnlockAdvanced;
-                    requirementText = `Lvl ${classData.requiredLevel}`;
-                }
-                
+
+                // Bloqueio por boss kill
                 if (classData.requiresBoss && !classesUnlocked) {
                     isLocked = !hasBossKill(classData.requiresBoss);
                     requirementText = `🐉 Boss`;
                 }
+
+                // Bloqueio por nível MÍNIMO (0 = livre desde o início)
+                const levelReq = CLASS_LEVEL_REQ[classKey] ?? 0;
+                const levelLocked = !classesUnlocked && levelReq > 0 && maxLevel < levelReq;
                 
                 const cardClass = classKey === selectedClass ? 'class-card selected' : 'class-card';
-                const lockedClass = isLocked ? ' locked' : '';
+                const lockedClass = isLocked ? ' locked' : (levelLocked ? ' level-locked' : '');
                 
                 card.className = cardClass + lockedClass;
                 card.dataset.class = classKey;
@@ -1482,16 +1860,20 @@
                 if (classData.hasSpecialSkill) {
                     specialDesc += ' - ⚡ Investida';
                 }
+
+                const lvlBadge = levelReq > 1 ? `<div class="class-level-req">🔒 Nível ${levelReq}+</div>` : '';
                 
                 card.innerHTML = `
                     ${requirementBadge}
                     <div class="class-icon">${classData.icon}</div>
                     <div class="class-name">${classData.name}</div>
                     <div class="class-desc">${specialDesc}</div>
-                    <div style="margin-top:6px;">${getRarityBadgeHTML(classKey)}</div>
+                    ${lvlBadge}
+                    <div style="margin-top:4px;">${getRarityBadgeHTML(classKey)}</div>
                 `;
                 
-                if (!isLocked) {
+                const effectivelyLocked = isLocked || levelLocked;
+                if (!effectivelyLocked) {
                     card.onclick = function() {
                         document.querySelectorAll('.class-card').forEach(c => c.classList.remove('selected'));
                         this.classList.add('selected');
@@ -1502,6 +1884,8 @@
                     card.onclick = function() {
                         if (classData.requiresBoss) {
                             showStatus(`Derrote o ${classData.requiredBossName} para desbloquear!`, 'error');
+                        } else if (levelLocked) {
+                            showStatus(`Requer nível ${levelReq}! (Seu máximo: ${maxLevel})`, 'error');
                         } else {
                             showStatus(`Requer nível 10! (Seu máximo: ${maxLevel})`, 'error');
                         }
@@ -1550,6 +1934,12 @@
                     return;
                 }
             }
+            // Verificação de nível mínimo por classe (novo sistema)
+            const lvlReq = CLASS_LEVEL_REQ[selectedClass] ?? 0;
+            if (!classesUnlocked && lvlReq > 0 && getMaxLevelReached() < lvlReq) {
+                showStatus(`Esta classe requer nível ${lvlReq}!`, 'error');
+                return;
+            }
             
             if (classData.requiresBoss && !classesUnlocked) {
                 if (!hasBossKill(classData.requiresBoss)) {
@@ -1578,10 +1968,12 @@
                 maxHp: classData.hp,
                 mp: classData.mp,
                 maxMp: classData.mp,
-                atk: 1,  // RESETADO PARA 1
-                def: 1,  // RESETADO PARA 1
+                atk: getBaseAtk(selectedClass),
+                def: getBaseDef(selectedClass),
                 speed: classData.speed,
-                inventory: []
+                inventory: [],
+                clan: getMyCharClan() || null,
+                equippedArmor: null
             };
             
             characters[currentCharacterSlot] = newChar;
@@ -1623,8 +2015,8 @@
             const stats = CLASSES[className];
             document.getElementById('previewHP').textContent = stats.hp;
             document.getElementById('previewMP').textContent = stats.mp;
-            document.getElementById('previewATK').textContent = 1;  // SEMPRE 1
-            document.getElementById('previewDEF').textContent = 1;  // SEMPRE 1
+            document.getElementById('previewATK').textContent = getBaseAtk(className);
+            document.getElementById('previewDEF').textContent = getBaseDef(className);
             document.getElementById('previewSPD').textContent = stats.speed;
         }
 
@@ -1808,10 +2200,14 @@
             
             const classData = CLASSES[myPlayer.class];
             
+            // Desequipa armadura antes de resetar stats
+            if (myPlayer.equippedArmor) unequipArmor(true);
+
             myPlayer.level = Math.max(1, Math.floor(myPlayer.level * 0.2));
             
-            myPlayer.atk = 1;  // RESETADO PARA 1
-            myPlayer.def = 1;  // RESETADO PARA 1
+            // Reset para o base da raridade, não para 1 fixo
+            myPlayer.atk = getBaseAtk(myPlayer.class);
+            myPlayer.def = getBaseDef(myPlayer.class);
             myPlayer.speed = classData.speed;
             
             myPlayer.xp = 0;
@@ -1823,10 +2219,11 @@
             myPlayer.hp = myPlayer.maxHp;
             myPlayer.mp = myPlayer.maxMp;
             
+            updateArmorSlot();
             document.getElementById('deathMessage').textContent = `Você foi derrotado por ${killerName}!`;
             document.getElementById('deathScreen').classList.add('active');
             
-            addChatMessage('SISTEMA', `💀 ${myPlayer.name} MORREU! Level: ${myPlayer.level}, Stats: 1/1`, 'death');
+            addChatMessage('SISTEMA', `💀 ${myPlayer.name} MORREU! Level: ${myPlayer.level}, ATK: ${myPlayer.atk}, DEF: ${myPlayer.def}`, 'death');
             
             broadcast({
                 type: 'playerDeath',
@@ -1875,6 +2272,9 @@
 
                 myPlayer = createPlayer(myId, charData.name, charData.class, WORLD_WIDTH/2 * TILE_SIZE, WORLD_HEIGHT/2 * TILE_SIZE);
                 Object.assign(myPlayer, charData);
+                // Restaura clã e armadura do save
+                myPlayer.clan = charData.clan || null;
+                if (charData.equippedArmor) myPlayer.equippedArmor = charData.equippedArmor;
                 players[myId] = myPlayer;
 
                 document.getElementById('mainMenu').style.display = 'none';
@@ -1923,6 +2323,8 @@
                 conn.on('open', () => {
                     myPlayer = createPlayer(myId, charData.name, charData.class, Math.random() * WORLD_WIDTH * TILE_SIZE, Math.random() * WORLD_HEIGHT * TILE_SIZE);
                     Object.assign(myPlayer, charData);
+                    myPlayer.clan = charData.clan || null;
+                    if (charData.equippedArmor) myPlayer.equippedArmor = charData.equippedArmor;
 
                     conn.send({
                         type: 'join',
@@ -1954,6 +2356,7 @@
 
         function createPlayer(id, name, playerClass, x, y) {
             const classData = CLASSES[playerClass];
+            const charData = JSON.parse(localStorage.getItem('selectedCharacter') || 'null');
             return {
                 id: id,
                 name: name,
@@ -1966,13 +2369,15 @@
                 maxHp: classData.hp,
                 mp: classData.mp,
                 maxMp: classData.mp,
-                atk: 1,  // COMEÇA COM 1
-                def: 1,  // COMEÇA COM 1
+                atk: getBaseAtk(playerClass),
+                def: getBaseDef(playerClass),
                 speed: classData.speed,
                 level: 1,
                 xp: 0,
                 maxXp: 100,
                 inventory: [],
+                clan: charData ? (charData.clan || null) : null,
+                equippedArmor: null,
                 aimAngle: 0,
                 invulnerable: false,
                 invulnerableTimer: 0
@@ -2076,7 +2481,57 @@
                     handleCommandBroadcast(data);
                     break;
 
+                // Sincronização periódica do mundo (inimigos + itens) enviada pelo host
+                case 'worldSync':
+                    if (!isHost) {
+                        enemies    = data.enemies;
+                        items      = data.items;
+                        // Atualiza posição dos outros jogadores recebida junto
+                        if (data.players) {
+                            Object.entries(data.players).forEach(([pid, pdata]) => {
+                                if (pid !== myId && players[pid]) {
+                                    Object.assign(players[pid], pdata);
+                                }
+                            });
+                        }
+                    }
+                    break;
+
+                case 'aoeEffect':
+                    // Cliente renderiza o círculo de explosão recebido do host
+                    if (!isHost) {
+                        aoeEffects.push(data.effect);
+                    }
+                    break;
+
+                case 'itemCollected':
+                    // Remove item coletado por qualquer jogador do array local
+                    if (!isHost) {
+                        items = items.filter(it => it.id !== data.itemId);
+                    }
+                    break;
+
+                case 'enemyDamaged':
+                    // Atualiza HP do inimigo danificado (disparado pelo host)
+                    if (!isHost) {
+                        const target = enemies.find(e => e.id === data.enemyId);
+                        if (target) target.hp = data.hp;
+                    }
+                    break;
+
+                case 'enemyDied':
+                    // Remove inimigo morto do array do cliente
+                    if (!isHost) {
+                        const idx = enemies.findIndex(e => e.id === data.enemyId);
+                        if (idx !== -1) enemies.splice(idx, 1);
+                        if (data.drops) items.push(...data.drops);
+                    }
+                    break;
+
                 case 'start':
+                    // Aplica o estado do mundo recebido do host antes de iniciar
+                    if (data.enemies) enemies = data.enemies;
+                    if (data.items)   items   = data.items;
                     startGameClient();
                     break;
             }
@@ -2116,8 +2571,12 @@
 
             generateWorld();
 
+            // Envia mundo gerado junto com o sinal de início para que o cliente
+            // comece com inimigos e itens já populados.
             broadcast({
-                type: 'start'
+                type: 'start',
+                enemies: enemies,
+                items: items
             });
 
             startGameClient();
@@ -2132,6 +2591,9 @@
             document.getElementById('playersList').classList.add('active');
             document.getElementById('chat').classList.add('active');
             document.getElementById('exitButton').classList.add('active');
+            document.getElementById('armorSlotPanel').classList.add('active');
+            updateArmorSlot();
+            updateClanBadge();
 
             generateInventorySlots();
             updateHUD();
@@ -2140,12 +2602,33 @@
             
             if (isHost) {
                 startBossTimer();
+                startWorldSync();   // Sync periódico para clientes
             }
             
             gameLoop();
 
             addChatMessage('Sistema', 'Bem-vindo ao Realm Online!', 'system');
-            addChatMessage('Sistema', 'Comandos: /kill, /boss1, /boss2, /boss3, /unlock, /super', 'command');
+            addChatMessage('Sistema', 'Comandos: /kill, /boss1, /boss2, /boss3, /unlock, /super, /rank', 'command');
+            addChatMessage('Sistema', '🛡️ Armaduras: colete 🪖 ⛑️ 🦺 🥋 e clique no inventário para equipar!', 'system');
+        }
+
+        // ── Sincronização periódica: host envia estado completo a cada 200ms ──
+        // Garante que clientes sempre tenham posições de inimigos e lista de itens atualizadas.
+        function startWorldSync() {
+            setInterval(() => {
+                if (!gameRunning || !isHost) return;
+                // Monta snapshot compacto dos jogadores para o cliente atualizar
+                const playerSnapshot = {};
+                Object.entries(players).forEach(([pid, p]) => {
+                    playerSnapshot[pid] = { x: p.x, y: p.y, hp: p.hp, mp: p.mp, level: p.level, aimAngle: p.aimAngle };
+                });
+                broadcast({
+                    type: 'worldSync',
+                    enemies: enemies,
+                    items: items,
+                    players: playerSnapshot
+                });
+            }, 200);
         }
 
         function generateWorld() {
@@ -2163,8 +2646,8 @@
             const typeKeys = Object.keys(ENEMY_TYPES);
             const randomType = typeKeys[Math.floor(Math.random() * typeKeys.length)];
             const enemyData = ENEMY_TYPES[randomType];
-            
-            enemies.push({
+
+            const newEnemy = {
                 id: Math.random().toString(36).substr(2, 9),
                 type: randomType,
                 x: Math.random() * WORLD_WIDTH * TILE_SIZE,
@@ -2180,7 +2663,8 @@
                 moveTimer: 0,
                 attackTimer: 0,
                 isBoss: false
-            });
+            };
+            enemies.push(newEnemy);
         }
 
         function spawnItem() {
@@ -2211,6 +2695,13 @@
             if (!myPlayer || !myPlayer.inventory[slotIndex]) return;
             
             const item = myPlayer.inventory[slotIndex];
+
+            // Se for item de armadura, redireciona para equipar
+            if (ARMOR_ITEMS[item.type]) {
+                equipArmor(slotIndex);
+                return;
+            }
+
             const itemData = ITEM_TYPES[item.type];
             
             if (!itemData) return;
@@ -2313,6 +2804,10 @@
                 inv.style.display = inv.style.display === 'none' || !inv.style.display ? 'block' : 'none';
             }
 
+            if (e.key.toLowerCase() === 'r' && !document.getElementById('chatInput').matches(':focus')) {
+                if (rankingOpen) closeRanking(); else openRanking();
+            }
+
             if (e.key.toLowerCase() === 'enter') {
                 e.preventDefault();
                 document.getElementById('chatInput').focus();
@@ -2409,8 +2904,12 @@
             myPlayer.inventory.push(item);
             items.splice(index, 1);
             
-            const itemData = ITEM_TYPES[item.type];
-            addChatMessage('Sistema', `Você coletou ${itemData.name}!`, 'loot');
+            // Informa todos os clientes que este item foi coletado e deve ser removido
+            broadcast({ type: 'itemCollected', itemId: item.id });
+            
+            const itemData = ITEM_TYPES[item.type] || ARMOR_ITEMS[item.type];
+            const isArmor = !!ARMOR_ITEMS[item.type];
+            addChatMessage('Sistema', `Você coletou ${itemData ? itemData.name : item.type}!${isArmor ? ' 🛡️ (Armadura - clique no inventário para equipar)' : ''}`, isArmor ? 'system' : 'loot');
             updateInventoryDisplay();
             saveCharacterProgress();
         }
@@ -2421,6 +2920,8 @@
                 if (slot) {
                     slot.innerHTML = '';
                     slot.classList.remove('has-item');
+                    slot.style.borderColor = '';
+                    slot.onclick = () => useItem(i);
                 }
             }
             
@@ -2428,14 +2929,29 @@
                 if (index < 20) {
                     const slot = document.getElementById(`slot${index}`);
                     if (slot) {
-                        const itemData = ITEM_TYPES[item.type];
-                        slot.innerHTML = `
-                            <span style="font-size: 1.5em;">${item.type}</span>
-                            <div class="item-tooltip">
-                                <strong>${itemData.name}</strong><br>
-                                ${itemData.desc}
-                            </div>
-                        `;
+                        const isArmor = !!ARMOR_ITEMS[item.type];
+                        const itemData = ITEM_TYPES[item.type] || ARMOR_ITEMS[item.type];
+                        if (isArmor) {
+                            // Armadura: borda roxa, clique equipa ao invés de usar
+                            slot.style.borderColor = '#9b59b6';
+                            slot.onclick = () => equipArmor(index);
+                            slot.innerHTML = `
+                                <span style="font-size: 1.5em;">${item.type}</span>
+                                <div class="item-tooltip">
+                                    <strong style="color:#d7b4ff;">${itemData ? itemData.name : item.type}</strong><br>
+                                    ${itemData ? itemData.desc : ''}<br>
+                                    <small style="color:#f0a500;">Clique para equipar</small>
+                                </div>
+                            `;
+                        } else {
+                            slot.innerHTML = `
+                                <span style="font-size: 1.5em;">${item.type}</span>
+                                <div class="item-tooltip">
+                                    <strong>${itemData ? itemData.name : item.type}</strong><br>
+                                    ${itemData ? itemData.desc : ''}
+                                </div>
+                            `;
+                        }
                         slot.classList.add('has-item');
                     }
                 }
@@ -2589,6 +3105,8 @@
                 });
             }
 
+            // Broadcast do efeito visual de AOE para os clientes renderizarem
+            broadcast({ type: 'aoeEffect', effect: { x: myPlayer.x, y: myPlayer.y, radius: cfg.radius, color: cfg.color, maxLife: 25, life: 25 } });
             showDamageNumber(myPlayer.x, myPlayer.y, cfg.icon + ' AOE!', true);
             addChatMessage('Sistema', `${CLASSES[cls].name} usou ataque em área!`, 'system');
         }
@@ -2690,8 +3208,11 @@
             myPlayer.maxMp += 10;
             myPlayer.mp = myPlayer.maxMp;
             
-            if (myPlayer.atk < STAT_CAPS.atk) myPlayer.atk = Math.min(STAT_CAPS.atk, myPlayer.atk + 3);
-            if (myPlayer.def < STAT_CAPS.def) myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + 2);
+            // Ganho por nível escalado pela raridade da classe
+            const atkGain = Math.ceil(3 * getRarityAtkMult(myPlayer.class));
+            const defGain = Math.ceil(2 * getRarityDefMult(myPlayer.class));
+            if (myPlayer.atk < STAT_CAPS.atk) myPlayer.atk = Math.min(STAT_CAPS.atk, myPlayer.atk + atkGain);
+            if (myPlayer.def < STAT_CAPS.def) myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + defGain);
 
             addChatMessage('Sistema', `🎉 LEVEL UP! Você é agora nível ${myPlayer.level}!`, 'system');
             showDamageNumber(myPlayer.x, myPlayer.y, 'LEVEL UP!', true);
@@ -2721,7 +3242,9 @@
                 atk: myPlayer.atk,
                 def: myPlayer.def,
                 speed: myPlayer.speed,
-                inventory: myPlayer.inventory
+                inventory: myPlayer.inventory,
+                clan: myPlayer.clan || null,
+                equippedArmor: myPlayer.equippedArmor || null
             };
             
             localStorage.setItem('realmCharacters', JSON.stringify(characters));
@@ -2795,13 +3318,16 @@
                     myPlayer.hp = myPlayer.maxHp;
                     myPlayer.maxMp += 300;
                     myPlayer.mp = myPlayer.maxMp;
-                    myPlayer.atk = Math.min(STAT_CAPS.atk, myPlayer.atk + 50);
-                    myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + 30);
-                    
+                    myPlayer.atk = Math.min(STAT_CAPS.atk, myPlayer.atk + Math.floor(50 * getRarityAtkMult(myPlayer.class)));
+                    myPlayer.def = Math.min(STAT_CAPS.def, myPlayer.def + Math.floor(30 * getRarityDefMult(myPlayer.class)));
                     addChatMessage('SISTEMA', `⚡ ${myPlayer.name} usou /super e é agora LEVEL 30!`, 'command');
                     showDamageNumber(myPlayer.x, myPlayer.y, 'SUPER!', true);
                     updateHUD();
                     saveCharacterProgress();
+                    return true;
+                
+                case '/rank':
+                    openRanking();
                     return true;
                     
                 default:
@@ -2879,7 +3405,13 @@
         function updateHUD() {
             if (!myPlayer) return;
 
-            document.getElementById('playerNameDisplay').textContent = `${myPlayer.name} - Lvl ${myPlayer.level}`;
+            // Nome com cor da raridade + tag de clã
+            const rarKey = CLASS_RARITY[myPlayer.class] || 'common';
+            const rarColor = (RARITY[rarKey] || RARITY.common).color;
+            const clanTag = myPlayer.clan ? `[${myPlayer.clan}] ` : '';
+            const nameEl = document.getElementById('playerNameDisplay');
+            nameEl.innerHTML = `<span style="color:${rarColor}">${clanTag}${myPlayer.name}</span> - Lvl ${myPlayer.level}`;
+            updateClanBadge();
             
             document.getElementById('hpText').textContent = `${Math.floor(myPlayer.hp)}/${myPlayer.maxHp}`;
             document.getElementById('hpBar').style.width = `${(myPlayer.hp / myPlayer.maxHp) * 100}%`;
@@ -2918,12 +3450,15 @@
 
         function updatePlayersList() {
             const list = document.getElementById('playersListContent');
-            list.innerHTML = Object.values(players).map(p => `
-                <div class="player-item">
-                    <span>${CLASSES[p.class].emoji} ${p.name}</span>
+            list.innerHTML = Object.values(players).map(p => {
+                const rarKey = CLASS_RARITY[p.class] || 'common';
+                const rarColor = (RARITY[rarKey] || RARITY.common).color;
+                const clan = p.clan ? `<span style="color:#9b59b6;font-size:0.8em;">[${p.clan}]</span> ` : '';
+                return `<div class="player-item">
+                    <span>${CLASSES[p.class].emoji} ${clan}<span style="color:${rarColor}">${p.name}</span></span>
                     <span class="player-level">Lvl ${p.level}</span>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
         function drawGame() {
@@ -3011,13 +3546,15 @@
                     ctx.fillText(classData.emoji, screenX, screenY);
                     ctx.globalAlpha = 1;
 
-                    // Nome
+                    // Nome + tag de clã no canvas
                     ctx.font = '12px Arial';
-                    ctx.fillStyle = player.id === myId ? '#f0a500' : 'white';
                     ctx.strokeStyle = 'black';
                     ctx.lineWidth = 3;
-                    ctx.strokeText(player.name, screenX, screenY - 25);
-                    ctx.fillText(player.name, screenX, screenY - 25);
+                    const rarKey2 = CLASS_RARITY[player.class] || 'common';
+                    ctx.fillStyle = (RARITY[rarKey2] || RARITY.common).color;
+                    const displayName = player.clan ? `[${player.clan}] ${player.name}` : player.name;
+                    ctx.strokeText(displayName, screenX, screenY - 25);
+                    ctx.fillText(displayName, screenX, screenY - 25);
 
                     // Barra de HP
                     const barWidth = 40;
@@ -3175,36 +3712,40 @@
                 if (enemy.hp <= 0) {
                     enemies.splice(index, 1);
                     
-                    // Boss morto - registrar kill
                     if (enemy.isBoss) {
                         registerBossKill(enemy.type);
                         addChatMessage('SISTEMA', `🎉 ${BOSS_TYPES[enemy.type].name} FOI DERROTADO!`, 'boss');
                     }
 
-                    // Spawn de itens
+                    // Gera drops
+                    const drops = [];
                     Object.keys(ITEM_TYPES).forEach(itemType => {
                         if (Math.random() < ITEM_TYPES[itemType].dropChance) {
-                            items.push({
-                                id: Math.random().toString(36).substr(2, 9),
-                                type: itemType,
-                                x: enemy.x + (Math.random() - 0.5) * 50,
-                                y: enemy.y + (Math.random() - 0.5) * 50
-                            });
+                            drops.push({ id: Math.random().toString(36).substr(2, 9), type: itemType,
+                                x: enemy.x + (Math.random()-0.5)*50, y: enemy.y + (Math.random()-0.5)*50 });
                         }
                     });
+                    const armorDropChance = enemy.isBoss ? 0.10 : 0.04;
+                    if (Math.random() < armorDropChance) {
+                        const armorType = ARMOR_DROP_LIST[Math.floor(Math.random()*ARMOR_DROP_LIST.length)];
+                        drops.push({ id: Math.random().toString(36).substr(2,9), type: armorType,
+                            x: enemy.x+(Math.random()-0.5)*50, y: enemy.y+(Math.random()-0.5)*50 });
+                    }
+                    drops.forEach(d => items.push(d));
 
-                    // Distribuir XP
+                    // Sincroniza morte + drops com clientes
+                    broadcast({ type: 'enemyDied', enemyId: enemy.id, drops: drops });
+
+                    // XP + clã
                     Object.values(players).forEach(player => {
                         if (player.id === myId) {
                             gainXP(enemy.xp);
+                            registerClanKill();
                         }
                     });
 
-                    // Respawn de inimigo normal
                     if (!enemy.isBoss) {
-                        setTimeout(() => {
-                            if (isHost) spawnEnemy();
-                        }, 5000);
+                        setTimeout(() => { if (isHost) spawnEnemy(); }, 5000);
                     }
                 }
             });
@@ -3223,7 +3764,7 @@
                     return;
                 }
 
-                // Colisão com inimigos
+                // Colisão com inimigos (só host calcula, depois sincroniza)
                 if (isHost) {
                     enemies.forEach(enemy => {
                         const dx = enemy.x - proj.x;
@@ -3232,7 +3773,6 @@
 
                         if (dist < TILE_SIZE) {
                             if (proj.explodeOnImpact) {
-                                // Bola de fogo do Warlock: dano em área no impacto
                                 const exRadius = proj.explodeRadius || 100;
                                 aoeEffects.push({ x: proj.x, y: proj.y, radius: exRadius, color: 'rgba(231,76,60,0.4)', maxLife: 20, life: 20 });
                                 enemies.forEach(e2 => {
@@ -3242,12 +3782,15 @@
                                         const dmg = Math.max(1, proj.damage - e2.def);
                                         e2.hp -= dmg;
                                         showDamageNumber(e2.x, e2.y, dmg, false);
+                                        broadcast({ type: 'enemyDamaged', enemyId: e2.id, hp: e2.hp });
                                     }
                                 });
                             } else {
                                 const damage = Math.max(1, proj.damage - enemy.def);
                                 enemy.hp -= damage;
                                 showDamageNumber(enemy.x, enemy.y, damage, false);
+                                // Sincroniza dano com clientes
+                                broadcast({ type: 'enemyDamaged', enemyId: enemy.id, hp: enemy.hp });
                             }
                             projectiles.splice(index, 1);
                         }
@@ -3278,4 +3821,5 @@
         });
     </script>
 </body>
+</html>
 </html>
