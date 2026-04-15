@@ -345,8 +345,8 @@
 
         #hud {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 14px;
+            left: 14px;
             display: none;
             z-index: 100;
         }
@@ -559,14 +559,14 @@
 
         #inventory {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 96px;
+            right: 14px;
             background: rgba(0, 0, 0, 0.9);
             border: 2px solid #f0a500;
             border-radius: 10px;
-            padding: 15px;
+            padding: 12px;
             display: none;
-            z-index: 100;
+            z-index: 105;
         }
 
         #inventory.active {
@@ -685,7 +685,7 @@
 
         #chat {
             position: fixed;
-            bottom: 100px;
+            bottom: 20px;
             left: 20px;
             width: 400px;
             background: rgba(0, 0, 0, 0.85);
@@ -770,8 +770,8 @@
 
         #playersList {
             position: fixed;
-            top: 350px;
-            right: 20px;
+            top: 430px;
+            right: 14px;
             background: rgba(0, 0, 0, 0.85);
             border: 2px solid #f0a500;
             border-radius: 10px;
@@ -900,9 +900,9 @@
 
         #exitButton {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
+            top: 14px;
+            right: 14px;
+            padding: 8px 16px;
             background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             color: white;
             border: 2px solid #c0392b;
@@ -910,8 +910,9 @@
             font-weight: bold;
             cursor: pointer;
             display: none;
-            z-index: 110;
+            z-index: 120;
             transition: all 0.3s;
+            font-size: 0.85em;
         }
 
         #exitButton.active {
@@ -972,15 +973,15 @@
         .rank-name { flex: 1; font-weight: bold; }
         .rank-val  { color: #2ecc71; font-weight: bold; min-width: 60px; text-align: right; }
         #clanBadge {
-            position: fixed; top: 20px; right: 180px;
+            position: fixed; top: 56px; right: 14px;
             background: rgba(0,0,0,0.85); border: 2px solid #9b59b6;
-            border-radius: 8px; padding: 6px 12px; display: none; z-index: 110;
-            font-size: 0.85em; color: #d7b4ff; font-weight: bold;
+            border-radius: 8px; padding: 5px 10px; display: none; z-index: 115;
+            font-size: 0.8em; color: #d7b4ff; font-weight: bold;
         }
         #clanBadge.active { display: block; }
         /* ===== SLOT DE ARMADURA ===== */
         #armorSlotPanel {
-            position: fixed; bottom: 100px; right: 20px;
+            position: fixed; bottom: 110px; left: 20px;
             background: rgba(0,0,0,0.9); border: 2px solid #f0a500;
             border-radius: 10px; padding: 12px; display: none; z-index: 110; text-align: center;
         }
@@ -1677,6 +1678,19 @@
         }
 
         // ===== RANKING =====
+        // Cache de personagens recebidos de outros jogadores para o ranking
+        let rankingCache = {};
+
+        // Compartilha dados do personagem com todos ao entrar no jogo
+        function shareRankingData() {
+            const charData = JSON.parse(localStorage.getItem('selectedCharacter') || 'null');
+            if (!charData) return;
+            broadcast({
+                type: 'rankingShare',
+                char: { name: charData.name, class: charData.class, level: charData.level, clan: charData.clan || null }
+            });
+        }
+
         let rankingOpen = false;
         function openRanking() {
             rankingOpen = true;
@@ -1696,12 +1710,14 @@
             else renderClanRanking();
         }
         function renderPlayerRanking() {
-            // Rankings baseados em dados salvos no localStorage de TODOS os personagens criados
             const allChars = JSON.parse(localStorage.getItem('realmCharacters') || '[]').filter(Boolean);
-            // Também inclui jogadores online na sessão atual
-            const onlinePlayers = Object.values(players || {});
             const combined = [...allChars];
-            onlinePlayers.forEach(p => {
+            // Adiciona personagens recebidos via rede (rankingCache)
+            Object.values(rankingCache).forEach(rc => {
+                if (!combined.find(c => c.name === rc.name)) combined.push(rc);
+            });
+            // Adiciona jogadores online que ainda não estão na lista
+            Object.values(players || {}).forEach(p => {
                 if (!combined.find(c => c.name === p.name)) combined.push(p);
             });
             combined.sort((a,b) => (b.level||0)-(a.level||0));
@@ -2092,8 +2108,8 @@
         let projectiles = [];
 
         const TILE_SIZE = 32;
-        const WORLD_WIDTH = 100;
-        const WORLD_HEIGHT = 100;
+        const WORLD_WIDTH  = 265;   // ~7x a área original (265*265 ≈ 7 × 100*100)
+        const WORLD_HEIGHT = 265;
 
         let bossTimer1 = 300;
         let bossTimer2 = 600;
@@ -2443,7 +2459,14 @@
 
                 case 'playerUpdate':
                     if (players[data.playerId]) {
-                        Object.assign(players[data.playerId], data.playerData);
+                        const pd = data.playerData;
+                        const target = players[data.playerId];
+                        // Interpola posição suavemente para eliminar jitter de rede
+                        if (pd.x !== undefined) target.targetX = pd.x;
+                        if (pd.y !== undefined) target.targetY = pd.y;
+                        // Outros campos aplicados diretamente (hp, mp, aimAngle etc.)
+                        const { x, y, ...rest } = pd;
+                        Object.assign(target, rest);
                     }
                     break;
 
@@ -2461,6 +2484,11 @@
 
                 case 'playerDeath':
                     addChatMessage('SISTEMA', `💀 ${data.playerName} morreu!`, 'death');
+                    // Se este cliente é quem morreu (host notificou), aplica limpeza local
+                    if (data.playerId === myId && myPlayer) {
+                        if (myPlayer.equippedArmor) unequipArmor(true);
+                        updateArmorSlot();
+                    }
                     break;
 
                 case 'chat':
@@ -2481,19 +2509,44 @@
                     handleCommandBroadcast(data);
                     break;
 
-                // Sincronização periódica do mundo (inimigos + itens) enviada pelo host
+                // Sincronização periódica via diff
                 case 'worldSync':
                     if (!isHost) {
-                        enemies    = data.enemies;
-                        items      = data.items;
-                        // Atualiza posição dos outros jogadores recebida junto
-                        if (data.players) {
-                            Object.entries(data.players).forEach(([pid, pdata]) => {
-                                if (pid !== myId && players[pid]) {
-                                    Object.assign(players[pid], pdata);
+                        // Aplica diffs de inimigos (move/dano)
+                        if (data.enemyDiffs && data.enemyDiffs.length > 0) {
+                            data.enemyDiffs.forEach(diff => {
+                                const existing = enemies.find(e => e.id === diff.id);
+                                if (existing) {
+                                    existing.x = diff.x; existing.y = diff.y; existing.hp = diff.hp;
+                                } else {
+                                    // Inimigo novo que o cliente não conhece ainda
+                                    enemies.push({ ...diff, atk: 0, def: 0, speed: 0, xp: 0,
+                                        attackRange: 0, attackCooldown: 0, attackTimer: 0, moveTimer: 0 });
                                 }
                             });
                         }
+                        // Aplica itens somente se mudaram
+                        if (data.items !== null && data.items !== undefined) {
+                            items = data.items;
+                        }
+                        // Atualiza posições de outros jogadores via targetX/Y para lerp
+                        if (data.players) {
+                            Object.entries(data.players).forEach(([pid, pdata]) => {
+                                if (pid !== myId && players[pid]) {
+                                    players[pid].targetX = pdata.x;
+                                    players[pid].targetY = pdata.y;
+                                    const { x, y, ...rest2 } = pdata;
+                                    Object.assign(players[pid], rest2);
+                                }
+                            });
+                        }
+                    }
+                    break;
+
+                case 'rankingShare':
+                    // Armazena personagem de outro jogador no cache de ranking
+                    if (data.char && data.char.name) {
+                        rankingCache[data.char.name] = data.char;
                     }
                     break;
 
@@ -2607,36 +2660,66 @@
             
             gameLoop();
 
+            shareRankingData();
             addChatMessage('Sistema', 'Bem-vindo ao Realm Online!', 'system');
             addChatMessage('Sistema', 'Comandos: /kill, /boss1, /boss2, /boss3, /unlock, /super, /rank', 'command');
             addChatMessage('Sistema', '🛡️ Armaduras: colete 🪖 ⛑️ 🦺 🥋 e clique no inventário para equipar!', 'system');
         }
 
-        // ── Sincronização periódica: host envia estado completo a cada 200ms ──
-        // Garante que clientes sempre tenham posições de inimigos e lista de itens atualizadas.
+        // ── Sincronização periódica via diff ──
+        // Em vez de enviar arrays completos a cada tick, compara com o estado anterior
+        // e só transmite o que mudou (posições de inimigos e itens alterados).
+        let _lastEnemySnapshot = {};  // id → {x,y,hp}  para comparação
+        let _lastItemIds = '';         // string de ids para comparação rápida
+
         function startWorldSync() {
             setInterval(() => {
                 if (!gameRunning || !isHost) return;
-                // Monta snapshot compacto dos jogadores para o cliente atualizar
+
+                // ── Diff de inimigos: envia apenas os que se moveram ou tomaram dano ──
+                const enemyDiffs = [];
+                enemies.forEach(e => {
+                    const prev = _lastEnemySnapshot[e.id];
+                    if (!prev || prev.x !== e.x || prev.y !== e.y || prev.hp !== e.hp) {
+                        enemyDiffs.push({ id: e.id, x: e.x, y: e.y, hp: e.hp, type: e.type, maxHp: e.maxHp, isBoss: e.isBoss });
+                        _lastEnemySnapshot[e.id] = { x: e.x, y: e.y, hp: e.hp };
+                    }
+                });
+                // Remove inimigos mortos do snapshot anterior
+                const liveIds = new Set(enemies.map(e => e.id));
+                Object.keys(_lastEnemySnapshot).forEach(id => { if (!liveIds.has(id)) delete _lastEnemySnapshot[id]; });
+
+                // ── Diff de itens: só reenvia se a lista de IDs mudou ──
+                const currentItemIds = items.map(i => i.id).join(',');
+                const itemsDiff = currentItemIds !== _lastItemIds ? items : null;
+                if (itemsDiff) _lastItemIds = currentItemIds;
+
+                // ── Snapshot compacto de jogadores ──
                 const playerSnapshot = {};
                 Object.entries(players).forEach(([pid, p]) => {
                     playerSnapshot[pid] = { x: p.x, y: p.y, hp: p.hp, mp: p.mp, level: p.level, aimAngle: p.aimAngle };
                 });
-                broadcast({
-                    type: 'worldSync',
-                    enemies: enemies,
-                    items: items,
-                    players: playerSnapshot
-                });
+
+                // Só envia se há algo para atualizar
+                if (enemyDiffs.length > 0 || itemsDiff || Object.keys(playerSnapshot).length > 0) {
+                    broadcast({
+                        type: 'worldSync',
+                        enemyDiffs: enemyDiffs,
+                        items: itemsDiff,         // null = sem mudança
+                        players: playerSnapshot
+                    });
+                }
             }, 200);
         }
 
         function generateWorld() {
             if (isHost) {
-                for (let i = 0; i < 50; i++) {
+                // Inimigos: escala com o mapa (mapa 7x maior → mais inimigos, mas não 7x para não quebrar perf)
+                for (let i = 0; i < 200; i++) {
                     spawnEnemy();
                 }
-                for (let i = 0; i < 80; i++) {
+                // Itens de chão: reduzidos (de 80 para 25). Drops de criaturas não foram alterados.
+                for (let i = 0; i < 25; i++) {
                     spawnItem();
                 }
             }
@@ -3468,19 +3551,26 @@
             const cameraX = myPlayer ? myPlayer.x - canvas.width / 2 : 0;
             const cameraY = myPlayer ? myPlayer.y - canvas.height / 2 : 0;
 
+            // Viewport culling: só renderiza tiles visíveis na câmera (perf crítica para mapa grande)
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.lineWidth = 1;
-            
-            for (let x = 0; x < WORLD_WIDTH; x++) {
-                for (let y = 0; y < WORLD_HEIGHT; y++) {
+            const startTileX = Math.max(0, Math.floor(cameraX / TILE_SIZE) - 1);
+            const startTileY = Math.max(0, Math.floor(cameraY / TILE_SIZE) - 1);
+            const endTileX   = Math.min(WORLD_WIDTH,  startTileX + Math.ceil(canvas.width  / TILE_SIZE) + 2);
+            const endTileY   = Math.min(WORLD_HEIGHT, startTileY + Math.ceil(canvas.height / TILE_SIZE) + 2);
+            for (let x = startTileX; x < endTileX; x++) {
+                for (let y = startTileY; y < endTileY; y++) {
                     const screenX = x * TILE_SIZE - cameraX;
                     const screenY = y * TILE_SIZE - cameraY;
-
-                    if (screenX > -TILE_SIZE && screenX < canvas.width && screenY > -TILE_SIZE && screenY < canvas.height) {
-                        ctx.strokeRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
-                    }
+                    ctx.strokeRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
                 }
             }
+            // Borda do mundo (delimitador visual)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,100,0,0.6)';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(-cameraX, -cameraY, WORLD_WIDTH * TILE_SIZE, WORLD_HEIGHT * TILE_SIZE);
+            ctx.restore();
 
             // Desenhar itens
             items.forEach(item => {
@@ -3592,11 +3682,12 @@
                 }
             });
 
-            // Desenhar efeitos visuais de AOE (círculos de expansão)
-            aoeEffects.forEach((fx, i) => {
+            // Desenhar efeitos visuais de AOE — iteração reversa para splice seguro
+            for (let i = aoeEffects.length - 1; i >= 0; i--) {
+                const fx = aoeEffects[i];
                 const sx = fx.x - cameraX;
                 const sy = fx.y - cameraY;
-                const progress = 1 - fx.life / fx.maxLife; // 0 → 1 conforme expira
+                const progress = 1 - fx.life / fx.maxLife;
                 const currentRadius = fx.radius * (0.3 + 0.7 * progress);
                 const alpha = fx.life / fx.maxLife;
 
@@ -3614,7 +3705,112 @@
 
                 fx.life--;
                 if (fx.life <= 0) aoeEffects.splice(i, 1);
+            }
+
+            // Bússola (sempre por cima de tudo)
+            drawCompass();
+        }
+
+        // ══ BÚSSOLA ══
+        // Desenhada diretamente no canvas, no canto inferior direito.
+        // Ponteiro vermelho aponta sempre para o NORTE do mapa (y decrescente = norte).
+        // As letras N/S/L/O giram em torno do círculo com a câmera.
+        function drawCompass() {
+            if (!myPlayer) return;
+
+            const SIZE   = 60;   // raio externo da bússola
+            const cx     = canvas.width  - SIZE - 16;
+            const cy     = canvas.height - SIZE - 16;
+            const innerR = SIZE * 0.55;
+            const outerR = SIZE * 0.92;
+
+            ctx.save();
+
+            // Fundo
+            ctx.beginPath();
+            ctx.arc(cx, cy, SIZE, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.72)';
+            ctx.fill();
+            ctx.strokeStyle = '#f0a500';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Velocidade/posição do jogador em porcentagem do mundo (minimap implícito)
+            const pctX = myPlayer.x / (WORLD_WIDTH  * TILE_SIZE);
+            const pctY = myPlayer.y / (WORLD_HEIGHT * TILE_SIZE);
+
+            // Coordenadas no mundo → texto de posição
+            const wx = Math.floor(myPlayer.x / TILE_SIZE);
+            const wy = Math.floor(myPlayer.y / TILE_SIZE);
+            ctx.font = 'bold 9px Courier New';
+            ctx.fillStyle = '#aaa';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${wx},${wy}`, cx, cy + SIZE * 0.3);
+
+            // Ponteiro: N aponta para y=0 (topo do mapa).
+            // Em canvas y aumenta para baixo, então "norte" = ângulo -π/2 no sentido trig.
+            // Não há rotação de câmera — o norte é sempre "para cima" na tela.
+            const northAngle = -Math.PI / 2;  // sempre para cima
+
+            // Agulha N (vermelha)
+            const nTipX = cx + Math.cos(northAngle) * innerR;
+            const nTipY = cy + Math.sin(northAngle) * innerR;
+            const sTipX = cx + Math.cos(northAngle + Math.PI) * innerR * 0.65;
+            const sTipY = cy + Math.sin(northAngle + Math.PI) * innerR * 0.65;
+            const perpX  = Math.cos(northAngle + Math.PI / 2) * 5;
+            const perpY  = Math.sin(northAngle + Math.PI / 2) * 5;
+
+            // Metade norte (vermelha)
+            ctx.beginPath();
+            ctx.moveTo(nTipX, nTipY);
+            ctx.lineTo(cx + perpX, cy + perpY);
+            ctx.lineTo(cx - perpX, cy - perpY);
+            ctx.closePath();
+            ctx.fillStyle = '#e74c3c';
+            ctx.fill();
+
+            // Metade sul (branca)
+            ctx.beginPath();
+            ctx.moveTo(sTipX, sTipY);
+            ctx.lineTo(cx + perpX, cy + perpY);
+            ctx.lineTo(cx - perpX, cy - perpY);
+            ctx.closePath();
+            ctx.fillStyle = '#ecf0f1';
+            ctx.fill();
+
+            // Centro
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#f0a500';
+            ctx.fill();
+
+            // Pontos cardeais — ficam fixos (norte sempre no topo)
+            const cardinals = [
+                { label: 'N', angle: northAngle,                color: '#e74c3c' },
+                { label: 'S', angle: northAngle + Math.PI,      color: '#ecf0f1' },
+                { label: 'L', angle: northAngle + Math.PI / 2,  color: '#aaa'    },
+                { label: 'O', angle: northAngle - Math.PI / 2,  color: '#aaa'    },
+            ];
+            ctx.font = 'bold 11px Courier New';
+            ctx.textBaseline = 'middle';
+            cardinals.forEach(c => {
+                const lx = cx + Math.cos(c.angle) * outerR;
+                const ly = cy + Math.sin(c.angle) * outerR;
+                ctx.fillStyle = c.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(c.label, lx, ly);
             });
+
+            // Mini-dot mostrando posição no mundo
+            const dotX = cx + (pctX - 0.5) * innerR * 1.6;
+            const dotY = cy + (pctY - 0.5) * innerR * 1.6;
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#f0a500';
+            ctx.fill();
+
+            ctx.restore();
         }
 
         function updateEnemies() {
@@ -3708,21 +3904,24 @@
                     }
                 }
 
-                // Remover inimigos mortos
+            });  // fim do forEach de movimento/ataque
+
+            // ── Remoção segura: itera de trás para frente para evitar skip de índices ──
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
                 if (enemy.hp <= 0) {
-                    enemies.splice(index, 1);
-                    
+                    enemies.splice(i, 1);
+
                     if (enemy.isBoss) {
                         registerBossKill(enemy.type);
                         addChatMessage('SISTEMA', `🎉 ${BOSS_TYPES[enemy.type].name} FOI DERROTADO!`, 'boss');
                     }
 
-                    // Gera drops
                     const drops = [];
                     Object.keys(ITEM_TYPES).forEach(itemType => {
                         if (Math.random() < ITEM_TYPES[itemType].dropChance) {
-                            drops.push({ id: Math.random().toString(36).substr(2, 9), type: itemType,
-                                x: enemy.x + (Math.random()-0.5)*50, y: enemy.y + (Math.random()-0.5)*50 });
+                            drops.push({ id: Math.random().toString(36).substr(2,9), type: itemType,
+                                x: enemy.x+(Math.random()-0.5)*50, y: enemy.y+(Math.random()-0.5)*50 });
                         }
                     });
                     const armorDropChance = enemy.isBoss ? 0.10 : 0.04;
@@ -3732,56 +3931,49 @@
                             x: enemy.x+(Math.random()-0.5)*50, y: enemy.y+(Math.random()-0.5)*50 });
                     }
                     drops.forEach(d => items.push(d));
-
-                    // Sincroniza morte + drops com clientes
                     broadcast({ type: 'enemyDied', enemyId: enemy.id, drops: drops });
 
-                    // XP + clã
                     Object.values(players).forEach(player => {
-                        if (player.id === myId) {
-                            gainXP(enemy.xp);
-                            registerClanKill();
-                        }
+                        if (player.id === myId) { gainXP(enemy.xp); registerClanKill(); }
                     });
 
                     if (!enemy.isBoss) {
                         setTimeout(() => { if (isHost) spawnEnemy(); }, 5000);
                     }
                 }
-            });
+            }
         }
 
         function updateProjectiles() {
-            projectiles.forEach((proj, index) => {
+            // Iteração reversa para permitir splice seguro sem pular índices
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const proj = projectiles[i];
                 proj.x += proj.vx;
                 proj.y += proj.vy;
-                // Gravidade simulada para projéteis lançadores (ex: flecha do Arqueiro)
                 if (proj.gravity) proj.vy += proj.gravity;
                 proj.life--;
 
                 if (proj.life <= 0) {
-                    projectiles.splice(index, 1);
-                    return;
+                    projectiles.splice(i, 1);
+                    continue;
                 }
 
-                // Colisão com inimigos (só host calcula, depois sincroniza)
                 if (isHost) {
-                    enemies.forEach(enemy => {
+                    let hit = false;
+                    for (let j = 0; j < enemies.length && !hit; j++) {
+                        const enemy = enemies[j];
                         const dx = enemy.x - proj.x;
                         const dy = enemy.y - proj.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-
-                        if (dist < TILE_SIZE) {
+                        if (Math.sqrt(dx*dx + dy*dy) < TILE_SIZE) {
                             if (proj.explodeOnImpact) {
                                 const exRadius = proj.explodeRadius || 100;
                                 aoeEffects.push({ x: proj.x, y: proj.y, radius: exRadius, color: 'rgba(231,76,60,0.4)', maxLife: 20, life: 20 });
                                 enemies.forEach(e2 => {
                                     const ex = e2.x - proj.x;
                                     const ey = e2.y - proj.y;
-                                    if (Math.sqrt(ex*ex + ey*ey) <= exRadius) {
-                                        const dmg = Math.max(1, proj.damage - e2.def);
-                                        e2.hp -= dmg;
-                                        showDamageNumber(e2.x, e2.y, dmg, false);
+                                    if (Math.sqrt(ex*ex+ey*ey) <= exRadius) {
+                                        e2.hp -= Math.max(1, proj.damage - e2.def);
+                                        showDamageNumber(e2.x, e2.y, Math.max(1, proj.damage - e2.def), false);
                                         broadcast({ type: 'enemyDamaged', enemyId: e2.id, hp: e2.hp });
                                     }
                                 });
@@ -3789,13 +3981,24 @@
                                 const damage = Math.max(1, proj.damage - enemy.def);
                                 enemy.hp -= damage;
                                 showDamageNumber(enemy.x, enemy.y, damage, false);
-                                // Sincroniza dano com clientes
                                 broadcast({ type: 'enemyDamaged', enemyId: enemy.id, hp: enemy.hp });
                             }
-                            projectiles.splice(index, 1);
+                            projectiles.splice(i, 1);
+                            hit = true;
                         }
-                    });
+                    }
                 }
+            }
+        }
+
+        // ── Lerp de posição de jogadores remotos ──
+        // Aplicado a cada frame antes de renderizar para suavizar jitter de rede.
+        function interpolateRemotePlayers() {
+            const LERP = 0.25; // fator de suavização (0=parado, 1=instantâneo)
+            Object.entries(players).forEach(([pid, p]) => {
+                if (pid === myId) return;
+                if (p.targetX !== undefined) p.x += (p.targetX - p.x) * LERP;
+                if (p.targetY !== undefined) p.y += (p.targetY - p.y) * LERP;
             });
         }
 
@@ -3807,6 +4010,7 @@
             lastTime = currentTime;
 
             updatePlayer();
+            interpolateRemotePlayers();
             updateEnemies();
             updateProjectiles();
             drawGame();
@@ -3821,5 +4025,4 @@
         });
     </script>
 </body>
-</html>
 </html>
