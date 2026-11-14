@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>⚔️ REALM ONLINE - RPG Multiplayer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
     <style>
         * {
@@ -1160,6 +1163,313 @@
         .class-level-req { font-size: 0.6em; color: #f39c12; margin-top: 2px; font-weight: bold; }
         .class-card.level-locked { opacity: 0.4; cursor: not-allowed; border-color: #444; }
         .class-card.level-locked:hover { transform: none; border-color: #444; background: rgba(0,0,0,0.6); }
+
+        /* ════════════════════════════════════════════════════════════
+           ✦ REALM ONLINE 2.0 — VISUAL OVERHAUL ✦
+           Camada de redesign: tipografia nova, menus reconstruídos,
+           HUD de vidro, cartões com raridade, barras com brilho.
+           (Sobrescreve as regras antigas via cascata — nada foi removido.)
+           ════════════════════════════════════════════════════════════ */
+        :root {
+            --gold: #f0b429;
+            --gold-soft: #ffd56b;
+            --ink: #0b0e1a;
+            --panel: rgba(10, 13, 26, 0.82);
+            --panel-border: rgba(240, 180, 41, 0.45);
+            --glass: linear-gradient(160deg, rgba(26,30,54,0.92), rgba(10,12,24,0.95));
+        }
+
+        body {
+            font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+            letter-spacing: 0.3px;
+        }
+        h1, h2, h3, .player-name, .room-code, .biome-banner-name,
+        .boss-warning h1, .death-content h1 {
+            font-family: 'Cinzel', 'Georgia', serif !important;
+            letter-spacing: 1.5px;
+        }
+
+        /* ── Menu base ── */
+        #menu { overflow-y: auto; }
+        .menu-container {
+            background: var(--glass);
+            border: 1px solid var(--panel-border);
+            border-radius: 18px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.6), 0 24px 80px rgba(0,0,0,0.75),
+                        0 0 90px rgba(240,180,41,0.08) inset;
+            backdrop-filter: blur(8px);
+            padding: 28px 30px;
+        }
+        .menu-container::before { opacity: 0.5; }
+        .logo img {
+            filter: drop-shadow(0 6px 24px rgba(240,180,41,0.35));
+        }
+
+        /* ── Botões ── */
+        .btn {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.14);
+            background: linear-gradient(170deg, #f7c948 0%, #de911d 55%, #b86e00 100%);
+            color: #1a1200;
+            box-shadow: 0 4px 0 #7a4a00, 0 8px 22px rgba(0,0,0,0.5);
+            transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.08);
+            box-shadow: 0 6px 0 #7a4a00, 0 14px 30px rgba(240,180,41,0.35);
+        }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #7a4a00, 0 4px 12px rgba(0,0,0,0.5); }
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: -120%; left: -40%;
+            width: 36%; height: 340%;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,0.45), transparent);
+            transform: rotate(18deg);
+            transition: left 0.45s ease;
+        }
+        .btn:hover::after { left: 130%; }
+        .btn-secondary {
+            background: linear-gradient(170deg, #2b3350, #141a2e);
+            color: #cfd8ff;
+            box-shadow: 0 4px 0 #090c18, 0 8px 22px rgba(0,0,0,0.5);
+            border: 1px solid rgba(160,180,255,0.25);
+        }
+        .btn-secondary:hover { box-shadow: 0 6px 0 #090c18, 0 14px 30px rgba(120,150,255,0.25); }
+        .btn-delete { background: linear-gradient(170deg, #ff6b5e, #b42318); color: #fff; box-shadow: 0 3px 0 #6b120a; }
+        .btn-select { background: linear-gradient(170deg, #5ad18a, #1f8f4d); color: #06230f; box-shadow: 0 3px 0 #0d4423; }
+
+        .input-group input, .input-group select {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.05em;
+            background: rgba(5,7,16,0.85);
+            border: 1px solid rgba(240,180,41,0.35);
+            border-radius: 10px;
+            color: #ffe9b8;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(240,180,41,0.18);
+        }
+
+        /* ── Cartões de classe ── */
+        .class-grid { gap: 10px; }
+        .class-card {
+            background: linear-gradient(165deg, rgba(30,35,60,0.9), rgba(12,14,28,0.95));
+            border-radius: 12px;
+            border-width: 1px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+        .class-card:hover {
+            transform: translateY(-4px) scale(1.03);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.6), 0 0 18px rgba(240,180,41,0.25);
+        }
+        .class-card.selected {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 2px rgba(240,180,41,0.55), 0 0 30px rgba(240,180,41,0.35);
+            background: linear-gradient(165deg, rgba(60,48,15,0.95), rgba(20,16,6,0.98));
+        }
+        .class-icon { line-height: 0; }
+        .class-icon canvas, .character-icon canvas, #selectedCharIcon canvas {
+            image-rendering: pixelated;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+        }
+        .class-name { font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 1px; }
+
+        .character-slot {
+            background: linear-gradient(165deg, rgba(28,33,58,0.92), rgba(10,12,24,0.96));
+            border: 1px solid rgba(240,180,41,0.3);
+            border-radius: 14px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+        .character-slot:hover {
+            transform: translateY(-3px);
+            border-color: var(--gold);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.55), 0 0 22px rgba(240,180,41,0.2);
+        }
+        .character-slot.empty {
+            border-style: dashed;
+            color: #8a93b8;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+        .character-icon { line-height: 0; }
+
+        .room-code {
+            background: rgba(5,7,16,0.9);
+            border: 1px dashed var(--gold);
+            border-radius: 10px;
+            color: var(--gold-soft);
+            text-shadow: 0 0 12px rgba(240,180,41,0.5);
+        }
+
+        /* ── HUD de vidro ── */
+        #hud .player-info {
+            background: var(--glass);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+            backdrop-filter: blur(6px);
+        }
+        #hudPortrait {
+            float: left;
+            width: 52px; height: 52px;
+            margin: 0 10px 6px 0;
+            border-radius: 10px;
+            border: 1px solid var(--panel-border);
+            background: radial-gradient(circle at 50% 35%, rgba(240,180,41,0.18), rgba(0,0,0,0.6));
+            image-rendering: pixelated;
+        }
+        .bar-container {
+            background: rgba(0,0,0,0.65);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+        }
+        .bar-fill {
+            border-radius: 6px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            background-image: linear-gradient(rgba(255,255,255,0.25), rgba(255,255,255,0) 45%, rgba(0,0,0,0.15));
+            transition: width 0.25s ease;
+        }
+        .hp-bar { background-color: #e5484d; }
+        .mp-bar { background-color: #3f8ef7; }
+        .xp-bar { background-color: #f0b429; }
+        .mini-stat {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+        }
+
+        /* ── Skills ── */
+        .skill-slot {
+            background: var(--glass);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+        .skill-slot:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.6), 0 0 16px rgba(240,180,41,0.3);
+        }
+        .skill-key {
+            background: var(--gold);
+            color: #1a1200;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            border-radius: 6px;
+        }
+
+        /* ── Inventário / chat / listas ── */
+        #inventory, #playersList, #chat {
+            background: var(--glass);
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+            backdrop-filter: blur(6px);
+        }
+        .inventory-slot {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            transition: transform 0.1s ease, border-color 0.1s ease;
+        }
+        .inventory-slot:hover { transform: scale(1.08); border-color: var(--gold); }
+        .chat-input input {
+            font-family: 'Rajdhani', sans-serif;
+            border-radius: 8px;
+        }
+        .chat-input button {
+            border-radius: 8px;
+            font-weight: 700;
+        }
+
+        /* ── Painéis diversos ── */
+        #bossTimer, #rankingPanel, #armorSlotPanel, #clanBadge, #pvpHUD {
+            background: var(--glass) !important;
+            border-radius: 12px;
+            backdrop-filter: blur(6px);
+        }
+        .damage-number {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+        }
+        .damage-number.crit {
+            color: #ffd000 !important;
+            font-size: 1.9em !important;
+            text-shadow: 0 0 8px #ff6a00, 0 2px 2px #000 !important;
+        }
+
+        /* ── Barra de boss no topo ── */
+        #bossBar {
+            position: fixed;
+            top: 8px; left: 50%;
+            transform: translateX(-50%);
+            width: min(560px, 80vw);
+            z-index: 210;
+            display: none;
+            pointer-events: none;
+        }
+        #bossBar.active { display: block; }
+        #bossBarName {
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #ffb3a7;
+            text-shadow: 0 0 12px rgba(229,72,77,0.8), 0 2px 2px #000;
+            font-size: 1.05em;
+            margin-bottom: 3px;
+        }
+        #bossBarTrack {
+            height: 14px;
+            background: rgba(0,0,0,0.72);
+            border: 1px solid rgba(229,72,77,0.6);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.6), inset 0 2px 6px rgba(0,0,0,0.8);
+        }
+        #bossBarFill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #ff5c52, #b4231f);
+            background-image: linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0) 45%, rgba(0,0,0,0.2)),
+                              linear-gradient(90deg, #ff5c52, #b4231f);
+            transition: width 0.2s ease;
+        }
+
+        /* ── Dica de controles ── */
+        #controlsHint {
+            position: fixed;
+            bottom: 8px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 150;
+            display: none;
+            background: rgba(5,7,16,0.72);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 999px;
+            padding: 5px 16px;
+            font-size: 0.72em;
+            color: #aab3d0;
+            letter-spacing: 1px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+        #controlsHint.active { display: block; }
+        #controlsHint b { color: var(--gold-soft); }
     </style>
 </head>
 <body>
@@ -1192,7 +1502,7 @@
             <div class="death-penalty">
                 <h3>⚠️ PENALIDADE DE MORTE SEVERA</h3>
                 <p style="color: #ff6b6b;">Level reduzido para 20% do anterior</p>
-                <p style="color: #ff6b6b;">ATK e DEF resetados para 1</p>
+                <p style="color: #ff6b6b;">ATK e DEF resetados para o base da classe</p>
                 <p style="color: #aaa; font-size: 0.9em; margin-top: 10px;">SPD: volta ao base da classe</p>
             </div>
             <button class="btn" onclick="respawn()" style="max-width: 300px; margin: 20px auto;">🔄 RENASCER</button>
@@ -1483,6 +1793,17 @@
 
     <canvas id="gameCanvas"></canvas>
 
+    <!-- Barra de vida do boss (topo da tela) -->
+    <div id="bossBar">
+        <div id="bossBarName">BOSS</div>
+        <div id="bossBarTrack"><div id="bossBarFill"></div></div>
+    </div>
+
+    <!-- Dica de controles -->
+    <div id="controlsHint">
+        <b>WASD</b> mover · <b>Clique</b> atacar · <b>1-4</b> skills · <b>Espaço</b> dash · <b>M</b> mapa · <b>I</b> inventário · <b>V</b> som
+    </div>
+
     <div id="hud">
         <div class="player-info">
             <div class="player-name" id="playerNameDisplay">Hero - Lvl 1</div>
@@ -1578,7 +1899,1102 @@
             cursor.style.top = mouseY - 15 + 'px';
         });
 
-        // ===== 27 CLASSES TOTAIS =====
+        // ════════════════════════════════════════════════════════════
+        // ✦ REALM GFX — MOTOR DE SPRITES PIXEL-ART ✦
+        // Substitui os emojis do mundo por personagens desenhados.
+        // Heróis: gerados parametricamente (pele/cabelo/roupa/chapéu/arma).
+        // Inimigos e bosses: grades de pixels autorais com paleta própria.
+        // Tudo pré-renderizado em canvases offscreen e cacheado.
+        // ════════════════════════════════════════════════════════════
+        const GFX = (() => {
+            const cache = {};
+
+            // ── Aparência de cada classe ──
+            // skin/hair/outfit/trim/pants/boots: cores. hat: tipo de chapéu.
+            // weapon: tipo de arma. cape: cor da capa (opcional).
+            const HERO_LOOKS = {
+                warrior:      { skin:'#e8b88a', hair:'#6b3f1d', outfit:'#8a94a6', trim:'#5a6374', pants:'#4a3426', boots:'#2e2018', hat:'band',   bandCol:'#b42318', weapon:'sword' },
+                mage:         { skin:'#e8b88a', hair:'#d8d8d8', outfit:'#3b5bdb', trim:'#2a3f9e', pants:'#2a3f9e', boots:'#1d2b6e', hat:'wizard', hatCol:'#3b5bdb', hatTrim:'#f0b429', weapon:'staff', orbCol:'#7fd7ff' },
+                archer:       { skin:'#dba673', hair:'#8a5a2a', outfit:'#3e7d3a', trim:'#2a5726', pants:'#5a4428', boots:'#3a2c1a', hat:'hood',   hatCol:'#2a5726', weapon:'bow' },
+                healer:       { skin:'#f0c8a0', hair:'#f0e3b8', outfit:'#f2f0e6', trim:'#f0b429', pants:'#d8d4c4', boots:'#b8a888', hat:'halo',   weapon:'wand', orbCol:'#9effb0' },
+                assassin:     { skin:'#d8a878', hair:'#1a1a22', outfit:'#2e3038', trim:'#1a1c22', pants:'#22242c', boots:'#15161c', hat:'mask',   hatCol:'#2e3038', weapon:'dagger' },
+                paladin:      { skin:'#e8b88a', hair:'#c8c8d0', outfit:'#c9cfdb', trim:'#f0b429', pants:'#8a94a6', boots:'#5a6374', hat:'helmet', hatCol:'#c9cfdb', hatTrim:'#f0b429', weapon:'sword', cape:'#2244aa' },
+                necromancer:  { skin:'#b8c89a', hair:'#3a2a4a', outfit:'#2a1e3e', trim:'#6a3f9e', pants:'#221836', boots:'#161022', hat:'hood',   hatCol:'#221836', weapon:'scythe', orbCol:'#7CFC00' },
+                druid:        { skin:'#dba673', hair:'#6a8a3a', outfit:'#5a7a3a', trim:'#8aa84a', pants:'#4a5a2e', boots:'#3a4424', hat:'band',   bandCol:'#8aa84a', weapon:'staff', orbCol:'#9effb0' },
+                berserker:    { skin:'#d8956a', hair:'#b4502a', outfit:'#8a4a2e', trim:'#5a3020', pants:'#4a3426', boots:'#2e2018', hat:'horns',  hatCol:'#d8d0c0', weapon:'axe' },
+                monk:         { skin:'#dba673', hair:null,      outfit:'#e07b2a', trim:'#b85e18', pants:'#b85e18', boots:'#7a3e10', hat:'none',   weapon:'fist' },
+                ranger:       { skin:'#d8a878', hair:'#4a3a2a', outfit:'#2e5a3a', trim:'#1e4228', pants:'#4a4030', boots:'#2e281e', hat:'cap',    hatCol:'#1e4228', weapon:'bow' },
+                bard:         { skin:'#e8b88a', hair:'#9a4a9e', outfit:'#7a3a8e', trim:'#f0b429', pants:'#3a2a4e', boots:'#241a30', hat:'cap',    hatCol:'#7a3a8e', weapon:'lute' },
+                summoner:     { skin:'#e8c8a8', hair:'#3ab8b0', outfit:'#1e7a78', trim:'#2ea8a0', pants:'#145a58', boots:'#0e403e', hat:'wizard', hatCol:'#1e7a78', hatTrim:'#7ff0e8', weapon:'staff', orbCol:'#7ff0e8' },
+                knight:       { skin:'#e8b88a', hair:'#5a4a3a', outfit:'#9aa4b6', trim:'#6a7486', pants:'#6a7486', boots:'#3e4654', hat:'helmet', hatCol:'#9aa4b6', hatTrim:'#c9cfdb', weapon:'greatsword', cape:'#8a1e1e' },
+                warlock:      { skin:'#c8a0b0', hair:'#2a1a2e', outfit:'#4a1a2e', trim:'#8a2e4e', pants:'#30101e', boots:'#1e0a12', hat:'horns',  hatCol:'#8a2e4e', weapon:'staff', orbCol:'#ff6b35' },
+                shadow_blade: { skin:'#b8b8c8', hair:'#1a1a2e', outfit:'#16182a', trim:'#2ee6d6', pants:'#101224', boots:'#0a0c18', hat:'mask',   hatCol:'#16182a', weapon:'katana', cape:'#101224' },
+                archmage:     { skin:'#e8c8a8', hair:'#e8e8f0', outfit:'#e8e4f4', trim:'#f0b429', pants:'#b8b4d4', boots:'#8a86a4', hat:'wizard', hatCol:'#e8e4f4', hatTrim:'#f0b429', weapon:'staff', orbCol:'#ffd56b' },
+                divine_knight:{ skin:'#e8b88a', hair:'#f0e3b8', outfit:'#e8c84a', trim:'#f8f0c0', pants:'#b89020', boots:'#8a6a14', hat:'crown',  hatCol:'#f8d84a', weapon:'greatsword', cape:'#f4f0e0' },
+                dragon_slayer:{ skin:'#d8956a', hair:'#2a1a1a', outfit:'#8a1e1e', trim:'#e05a2a', pants:'#4a1414', boots:'#2e0c0c', hat:'horns',  hatCol:'#e05a2a', weapon:'greatsword', cape:'#3a0e0e' },
+                elementalist: { skin:'#e8b88a', hair:'#4ab8e0', outfit:'#2a6ab0', trim:'#e07b2a', pants:'#1e4a80', boots:'#143258', hat:'band',   bandCol:'#e07b2a', weapon:'staff', orbCol:'#7fd7ff' },
+                samurai:      { skin:'#dba673', hair:'#1a1a22', outfit:'#a42e2a', trim:'#d8b84a', pants:'#5a1e1c', boots:'#30110f', hat:'kabuto', hatCol:'#a42e2a', hatTrim:'#d8b84a', weapon:'katana' },
+                priest:       { skin:'#f0c8a0', hair:'#c8c0a8', outfit:'#f4f2ea', trim:'#d8b84a', pants:'#d8d4c4', boots:'#a89868', hat:'mitre',  hatCol:'#f4f2ea', hatTrim:'#d8b84a', weapon:'wand', orbCol:'#fff1a8' },
+                ninja:        { skin:'#d8a878', hair:'#16182a', outfit:'#1e2238', trim:'#b42318', pants:'#16182a', boots:'#0e1020', hat:'mask',   hatCol:'#1e2238', weapon:'dagger' },
+                barbarian:    { skin:'#d8956a', hair:'#7a4a1e', outfit:null,      trim:'#6a4a2e', pants:'#6a4a2e', boots:'#3a2c1a', hat:'band',   bandCol:'#6a4a2e', weapon:'hammer' },
+                enchanter:    { skin:'#e8c8a8', hair:'#e87bb0', outfit:'#b04a9e', trim:'#f0b0e0', pants:'#6a2a5e', boots:'#44183c', hat:'band',   bandCol:'#f0b0e0', weapon:'wand', orbCol:'#ffb0f0' },
+                demon_hunter: { skin:'#c8a0a0', hair:'#e8e8f0', outfit:'#3a1e4e', trim:'#b42318', pants:'#2a1638', boots:'#1a0e24', hat:'hood',   hatCol:'#2a1638', weapon:'bow', cape:'#2a1638' },
+                shapeshifter: { skin:'#d8a878', hair:'#8a7a5a', outfit:'#6a5a3e', trim:'#8a7a5a', pants:'#4a3e2a', boots:'#2e261a', hat:'ears',   hatCol:'#6a5a3e', weapon:'claw' }
+            };
+            const DEFAULT_LOOK = HERO_LOOKS.warrior;
+
+            // ── Desenha um herói pixel-a-pixel em grade 16×18 ──
+            function drawHero(c, look, frame) {
+                const g = c.getContext('2d');
+                const S = c.width / 16;  // escala de 1 "pixel"
+                const px = (x, y, w, h, col) => { if (!col) return; g.fillStyle = col; g.fillRect(x * S, y * S, w * S, h * S); };
+                const dk = (hex, f) => shadeColor(hex, f); // escurecer
+                g.clearRect(0, 0, c.width, c.height);
+
+                const L = look;
+                const skin = L.skin, outfit = L.outfit || L.skin, trim = L.trim || dk(outfit, -25);
+                const walk = frame === 1 ? 1 : frame === 2 ? -1 : 0;
+
+                // Capa (atrás do corpo)
+                if (L.cape) {
+                    px(4, 8, 1, 7, dk(L.cape, -20));
+                    px(5, 8, 1, 8, L.cape);
+                    px(10, 8, 1, 8, L.cape);
+                    px(11, 8, 1, 7, dk(L.cape, -20));
+                }
+
+                // Pernas
+                if (walk === 0) {
+                    px(6, 13, 2, 3, L.pants); px(8, 13, 2, 3, L.pants);
+                    px(6, 16, 2, 2, L.boots); px(8, 16, 2, 2, L.boots);
+                } else {
+                    const up = walk > 0;
+                    px(6, 13, 2, up ? 2 : 3, L.pants); px(8, 13, 2, up ? 3 : 2, L.pants);
+                    px(up ? 5 : 6, up ? 15 : 16, 2, 2, L.boots);
+                    px(up ? 8 : 9, up ? 16 : 15, 2, 2, L.boots);
+                }
+
+                // Torso
+                px(5, 8, 6, 5, outfit);
+                px(5, 8, 6, 1, trim);               // ombros
+                px(5, 12, 6, 1, dk(L.pants, -15));  // cinto
+                px(7, 12, 2, 1, '#d8b84a');         // fivela
+                if (!L.outfit) { px(5, 8, 6, 4, skin); px(5, 11, 6, 1, L.trim); } // bárbaro: peito nu
+
+                // Braços (balançam ao andar)
+                const aw = walk;
+                px(3, 9 + (aw > 0 ? 1 : 0), 2, 3, L.outfit ? trim : skin);
+                px(11, 9 + (aw < 0 ? 1 : 0), 2, 3, L.outfit ? trim : skin);
+                px(3, 12 + (aw > 0 ? 1 : 0), 2, 1, skin);  // mãos
+                px(11, 12 + (aw < 0 ? 1 : 0), 2, 1, skin);
+
+                // Cabeça
+                px(5, 3, 6, 5, skin);
+                px(5, 3, 6, 1, dk(skin, -12));
+                // Olhos
+                px(6, 5, 1, 1, '#ffffff'); px(9, 5, 1, 1, '#ffffff');
+                px(6, 6, 1, 1, '#1a1a2a'); px(9, 6, 1, 1, '#1a1a2a');
+                // Cabelo
+                if (L.hair && L.hat !== 'helmet' && L.hat !== 'hood' && L.hat !== 'mask' && L.hat !== 'wizard' && L.hat !== 'mitre' && L.hat !== 'kabuto') {
+                    px(5, 2, 6, 1, L.hair); px(4, 3, 1, 2, L.hair); px(11, 3, 1, 2, L.hair);
+                    px(5, 3, 6, 1, L.hair);
+                }
+
+                // Chapéus / elmos
+                const hc = L.hatCol || '#888', ht = L.hatTrim || dk(hc, 30);
+                switch (L.hat) {
+                    case 'band':
+                        px(5, 3, 6, 1, L.bandCol || '#b42318');
+                        break;
+                    case 'hood':
+                        px(4, 1, 8, 2, hc); px(4, 3, 1, 4, hc); px(11, 3, 1, 4, hc);
+                        px(5, 3, 6, 1, dk(hc, -18));
+                        break;
+                    case 'helmet':
+                        px(4, 1, 8, 2, hc); px(4, 3, 8, 2, hc);
+                        px(5, 5, 6, 1, dk(hc, -35));            // visor
+                        px(7, 0, 2, 1, ht);                     // crista
+                        break;
+                    case 'wizard':
+                        px(6, 0, 4, 1, hc); px(5, 1, 6, 1, hc); px(4, 2, 8, 1, hc);
+                        px(3, 3, 10, 1, hc); px(3, 3, 10, 1, ht ? dk(hc, -10) : hc);
+                        px(4, 3, 8, 1, ht);                     // aba/faixa
+                        break;
+                    case 'mitre':
+                        px(6, 0, 4, 1, hc); px(6, 1, 4, 1, hc); px(5, 2, 6, 1, hc);
+                        px(5, 3, 6, 1, ht);
+                        break;
+                    case 'crown':
+                        px(5, 1, 1, 1, hc); px(7, 1, 2, 1, hc); px(10, 1, 1, 1, hc);
+                        px(5, 2, 6, 1, hc); px(7, 2, 1, 1, '#e5484d');
+                        break;
+                    case 'horns':
+                        px(3, 1, 1, 2, hc); px(4, 2, 1, 1, hc);
+                        px(12, 1, 1, 2, hc); px(11, 2, 1, 1, hc);
+                        break;
+                    case 'halo':
+                        px(5, 0, 6, 1, '#ffe98a');
+                        break;
+                    case 'mask':
+                        px(4, 1, 8, 2, hc); px(4, 3, 1, 5, hc); px(11, 3, 1, 5, hc);
+                        px(5, 3, 6, 1, hc); px(5, 7, 6, 1, hc); // cobre boca
+                        break;
+                    case 'kabuto':
+                        px(4, 1, 8, 2, hc); px(3, 3, 10, 1, hc);
+                        px(7, 0, 2, 1, ht); px(5, 0, 1, 1, ht); px(10, 0, 1, 1, ht);
+                        break;
+                    case 'cap':
+                        px(4, 2, 8, 1, hc); px(5, 1, 6, 1, hc);
+                        px(11, 1, 2, 1, '#e5484d');            // pena
+                        break;
+                    case 'ears':
+                        px(4, 1, 1, 2, hc); px(11, 1, 1, 2, hc);
+                        break;
+                }
+
+                // Armas (lado direito)
+                const oc = L.orbCol || '#ffd56b';
+                switch (L.weapon) {
+                    case 'sword':
+                        px(12, 4, 1, 7, '#dfe6f0'); px(13, 4, 1, 7, '#b9c2d4');
+                        px(11, 11, 3, 1, '#d8b84a'); px(12, 12, 1, 2, '#6a4a2e');
+                        break;
+                    case 'greatsword':
+                        px(12, 2, 2, 9, '#dfe6f0'); px(13, 2, 1, 9, '#9aa4bc');
+                        px(12, 1, 2, 1, '#eef2f8');
+                        px(11, 11, 4, 1, '#d8b84a'); px(12, 12, 2, 2, '#6a4a2e');
+                        break;
+                    case 'katana':
+                        px(13, 3, 1, 8, '#eef2f8'); px(12, 4, 1, 7, '#c9d2e4');
+                        px(12, 11, 3, 1, '#d8b84a'); px(13, 12, 1, 2, '#2a2030');
+                        break;
+                    case 'dagger':
+                        px(12, 8, 1, 3, '#dfe6f0'); px(12, 11, 1, 2, '#4a3426');
+                        break;
+                    case 'axe':
+                        px(13, 4, 1, 9, '#6a4a2e');
+                        px(11, 3, 2, 3, '#c9cfdb'); px(13, 2, 2, 4, '#c9cfdb'); px(14, 3, 1, 2, '#9aa4bc');
+                        break;
+                    case 'hammer':
+                        px(13, 4, 1, 8, '#6a4a2e');
+                        px(11, 2, 4, 3, '#8a8f9c'); px(11, 2, 4, 1, '#b9c2d4');
+                        break;
+                    case 'scythe':
+                        px(13, 2, 1, 11, '#4a3a5e');
+                        px(10, 1, 4, 1, '#cfd8e3'); px(9, 2, 2, 1, '#cfd8e3');
+                        break;
+                    case 'staff':
+                        px(13, 3, 1, 10, '#6a4a2e');
+                        px(12, 1, 3, 3, oc); px(13, 2, 1, 1, '#ffffff');
+                        break;
+                    case 'wand':
+                        px(13, 6, 1, 6, '#6a4a2e');
+                        px(12, 4, 3, 2, oc); px(13, 4, 1, 1, '#ffffff');
+                        break;
+                    case 'bow':
+                        px(14, 3, 1, 1, '#8a6a3e'); px(15, 4, 1, 3, '#8a6a3e');
+                        px(15, 9, 1, 3, '#8a6a3e'); px(14, 12, 1, 1, '#8a6a3e');
+                        px(14, 4, 1, 8, 'rgba(255,255,255,0.65)');
+                        break;
+                    case 'lute':
+                        px(12, 7, 3, 4, '#a8742e'); px(13, 4, 1, 3, '#6a4a2e');
+                        px(13, 8, 1, 2, '#f0e3b8');
+                        break;
+                    case 'claw':
+                        px(13, 9, 1, 3, '#dfe6f0'); px(14, 8, 1, 3, '#dfe6f0'); px(15, 9, 1, 2, '#dfe6f0');
+                        break;
+                    case 'fist':
+                        px(11, 12, 2, 1, '#f0e6d4'); px(3, 12, 2, 1, '#f0e6d4'); // bandagens
+                        break;
+                }
+            }
+
+            // Escurece/clareia cor hex (pct -100..100)
+            function shadeColor(hex, pct) {
+                if (!hex || hex[0] !== '#') return hex;
+                const n = parseInt(hex.slice(1), 16);
+                let r = (n >> 16) + Math.round(2.55 * pct);
+                let g2 = ((n >> 8) & 0xff) + Math.round(2.55 * pct);
+                let b = (n & 0xff) + Math.round(2.55 * pct);
+                r = Math.max(0, Math.min(255, r)); g2 = Math.max(0, Math.min(255, g2)); b = Math.max(0, Math.min(255, b));
+                return '#' + ((1 << 24) + (r << 16) + (g2 << 8) + b).toString(16).slice(1);
+            }
+
+            // ── Sprites de herói: cache por classe+frame+lado ──
+            function getHeroSprite(classKey, frame = 0, flip = false) {
+                const key = `h_${classKey}_${frame}_${flip ? 1 : 0}`;
+                if (cache[key]) return cache[key];
+                const c = document.createElement('canvas');
+                c.width = 48; c.height = 54; // 16×18 @ 3x
+                drawHero(c, HERO_LOOKS[classKey] || DEFAULT_LOOK, frame);
+                if (flip) {
+                    const f = document.createElement('canvas');
+                    f.width = c.width; f.height = c.height;
+                    const fg = f.getContext('2d');
+                    fg.translate(f.width, 0); fg.scale(-1, 1);
+                    fg.drawImage(c, 0, 0);
+                    cache[key] = f;
+                    return f;
+                }
+                cache[key] = c;
+                return c;
+            }
+
+            // ── Grades de pixel dos inimigos ──
+            // Cada letra = cor na paleta; '.' = transparente.
+            const GRIDS = {
+                GOBLIN: [
+                    '..o..........o..',
+                    '.oo...oooo...oo.',
+                    '.oOooOOOOOOooOo.',
+                    '..oOOOOOOOOOOo..',
+                    '..OOWBOOOOWBOO..',
+                    '..oOOOOOOOOOOo..',
+                    '...OOOrrrrOOO...',
+                    '....tttttttt....',
+                    '...tttttttttt...',
+                    '..Ottttttttt0O..',
+                    '..OtttbbbbtttO..',
+                    '...tttttttttt...',
+                    '....LLL..LLL....',
+                    '....LLL..LLL....',
+                    '...LLL....LLL...',
+                    '................'
+                ],
+                SLIME: [
+                    '................',
+                    '................',
+                    '......ssss......',
+                    '....ssssssss....',
+                    '...sshsssshss...',
+                    '..ssssssssssss..',
+                    '..ssWBssssWBss..',
+                    '.ssssssssssssss.',
+                    '.ssssssssssssss.',
+                    '.ssssddddssssss.',
+                    '.ssssssssssssss.',
+                    '..ssssssssssss..',
+                    '..ssssssssssss..',
+                    '...ssssssssss...',
+                    '....dddddddd....',
+                    '................'
+                ],
+                SKELETON: [
+                    '................',
+                    '....bbbbbbbb....',
+                    '...bbbbbbbbbb...',
+                    '...bBBbbbbBBb...',
+                    '...bbbbbbbbbb...',
+                    '....bbrrrrbb....',
+                    '.....b.bb.b.....',
+                    '....bbbbbbbb....',
+                    '..b.b.bbbb.b.b..',
+                    '..b..bbbbbb..b..',
+                    '..bb.b.bb.b.bb..',
+                    '.....bbbbbb.....',
+                    '......b..b......',
+                    '.....bb..bb.....',
+                    '.....b....b.....',
+                    '....bb....bb....'
+                ],
+                ORC: [
+                    '................',
+                    '...oooooooooo...',
+                    '..oooooooooooo..',
+                    '.oooWBooooWBooo.',
+                    '.oooooooooooooo.',
+                    '..ooFooooooFoo..',
+                    '...oooooooooo...',
+                    '...tttttttttt...',
+                    '..tttttttttttt..',
+                    '.OtttttttttttttO',
+                    '.OttthhhhhhtttO.',
+                    '..tttttttttttt..',
+                    '...LLLL..LLLL...',
+                    '...LLLL..LLLL...',
+                    '..LLLL....LLLL..',
+                    '................'
+                ],
+                ZOMBIE: [
+                    '................',
+                    '....zzzzzzzz....',
+                    '...zzzzzzzzzz...',
+                    '...zWBzzzzWBz...',
+                    '...zzzzzzzzzz...',
+                    '....zzrrrzzz....',
+                    '.....zzzzzz.....',
+                    '....tttttttt....',
+                    '...ttt.tttttt...',
+                    '..zttttttt.ttz..',
+                    '..ztttttttttt...',
+                    '...ttt.tttttt...',
+                    '....LL...LLL....',
+                    '....LL...LLL....',
+                    '...LL.....LL....',
+                    '................'
+                ],
+                GHOST: [
+                    '................',
+                    '.....gggggg.....',
+                    '....gggggggg....',
+                    '...gggggggggg...',
+                    '...gBBggggBBg...',
+                    '...gggggggggg...',
+                    '...gggoooogggg..',
+                    '...gggggggggg...',
+                    '..gggggggggggg..',
+                    '..gggggggggggg..',
+                    '..gggggggggggg..',
+                    '..gg.ggggg.ggg..',
+                    '..g..gg.gg..gg..',
+                    '.....g...g...g..',
+                    '................',
+                    '................'
+                ],
+                DEMON: [
+                    '..h..........h..',
+                    '..hh........hh..',
+                    '...dddddddddd...',
+                    '..dddddddddddd..',
+                    '..dYBddddddYBd..',
+                    '..dddddddddddd..',
+                    '...ddrrrrrrdd...',
+                    '....dddddddd....',
+                    '.w..dddddddd..w.',
+                    'ww.dddddddddd.ww',
+                    'w..dddddddddd..w',
+                    '...dddddddddd...',
+                    '....ddd..ddd....',
+                    '....ddd..ddd....',
+                    '...hdd....ddh...',
+                    '................'
+                ],
+                VAMPIRE: [
+                    '................',
+                    '....kkkkkkkk....',
+                    '...kkkkkkkkkk...',
+                    '...ppppppppppp..',
+                    '...pRBppppRBp...',
+                    '...pppppppppp...',
+                    '....ppFppFpp....',
+                    '..c.cccccccc.c..',
+                    '.cc.tttttttt.cc.',
+                    '.cc.tttttttt.cc.',
+                    '.c.tttttttttt.c.',
+                    '...ttrrrrrrtt...',
+                    '....LLL..LLL....',
+                    '....LLL..LLL....',
+                    '...LLL....LLL...',
+                    '................'
+                ],
+                WOLFMAN: [
+                    '..f..........f..',
+                    '..ff........ff..',
+                    '...ffffffffff...',
+                    '..ffffffffffff..',
+                    '..fYBffffffYBf..',
+                    '..ffffffffffff..',
+                    '...ffFrrrrFff...',
+                    '....ffffffff....',
+                    '...ffffffffff...',
+                    '..fffffffffffff.',
+                    '..ff.ffffff.ff..',
+                    '...fffffffffff..',
+                    '....fff..fff....',
+                    '....fff..fff....',
+                    '...fff....fff...',
+                    '...cc......cc...'
+                ],
+                SPIDER: [
+                    '................',
+                    '................',
+                    'l..l........l..l',
+                    '.l.l..aaaa..l.l.',
+                    '.llll.aaaa.llll.',
+                    '..llaaaaaaaall..',
+                    '.l.aaaRRRRaaa.l.',
+                    'l..aaaaaaaaaa..l',
+                    'l.aaaaaaaaaaaa.l',
+                    '.laaaaaaaaaaaal.',
+                    '.l.aaaaaaaaaa.l.',
+                    'l..l.aaaaaa.l..l',
+                    'l..l..aaaa..l..l',
+                    '...l........l...',
+                    '................',
+                    '................'
+                ],
+                BAT: [
+                    '................',
+                    '................',
+                    '................',
+                    'w..w........w..w',
+                    'www.w......w.www',
+                    'wwww.w....w.wwww',
+                    'wwwwwbbbbbbwwwww',
+                    '.wwwbbbbbbbbwww.',
+                    '..wwbRBbbRBbww..',
+                    '...bbbbbbbbbb...',
+                    '....bbffffbb....',
+                    '.....bbbbbb.....',
+                    '......b..b......',
+                    '................',
+                    '................',
+                    '................'
+                ],
+                SNAKE: [
+                    '................',
+                    '................',
+                    '......ssss......',
+                    '.....ssssss.....',
+                    '.....sYBsYBs....',
+                    '.....ssssss.....',
+                    '......ssrr......',
+                    '.......sss......',
+                    '....ssssssss....',
+                    '...ssssssssss...',
+                    '..sss..d..sss...',
+                    '..ss.sssss.ss...',
+                    '..sssssssssss...',
+                    '...sssssssss....',
+                    '....sssssss.....',
+                    '................'
+                ],
+                GOLEM: [
+                    '................',
+                    '....rrrrrrrr....',
+                    '...rrrrrrrrrr...',
+                    '...rGGrrrrGGr...',
+                    '...rrrrrrrrrr...',
+                    '....rrrrrrrr....',
+                    '..rrrrrrrrrrrr..',
+                    '.rrrrrrrrrrrrrr.',
+                    '.rrmrrrrrrrmrrr.',
+                    '.rrrrrmmrrrrrrr.',
+                    '.rrrrrrrrrrrrrr.',
+                    '..rrrrrrrrrrrr..',
+                    '...rrrr..rrrr...',
+                    '...rrrr..rrrr...',
+                    '..rrrr....rrrr..',
+                    '................'
+                ],
+                WITCH: [
+                    '.......hh.......',
+                    '......hhhh......',
+                    '.....hhhhhh.....',
+                    '....hhhhhhhh....',
+                    '..hhhhhhhhhhhh..',
+                    '....pppppppp....',
+                    '...pGBppppGBp...',
+                    '....pppppppp....',
+                    '.....pprrpp.....',
+                    '....tttttttt....',
+                    '...tttttttttt...',
+                    '..pttttttttttp..',
+                    '...tttttttttt...',
+                    '....ttttttt.....',
+                    '...ttttttttt....',
+                    '................'
+                ],
+                ELEMENTAL: [
+                    '................',
+                    '......eeee......',
+                    '....eeeeeeee....',
+                    '...eeEEeeEEee...',
+                    '...eeeeeeeeee...',
+                    '..eeeeeeeeeeee..',
+                    '..eeeEEEEEEeee..',
+                    '.eeeeeeeeeeeeee.',
+                    '.eeee.eeee.eeee.',
+                    '..eee..ee..eee..',
+                    '..ee...ee...ee..',
+                    '...e...ee...e...',
+                    '.......e........',
+                    '....e......e....',
+                    '................',
+                    '................'
+                ],
+                DRAGON: [
+                    '....h......h....',
+                    '....dddddddd....',
+                    '...dddddddddd...',
+                    '...dYBddddYBd...',
+                    '...dddddddddd...',
+                    '....ddrrrrdd....',
+                    'w....dddddd....w',
+                    'ww..dddddddd..ww',
+                    'www.dddddddd.www',
+                    'wwwwddddddddwwww',
+                    '.ww.dddddddd.ww.',
+                    '....dbbbbbbd....',
+                    '....ddd..ddd....',
+                    '...ddd....ddd...',
+                    '..dd..d..d..dd..',
+                    '......dddd......'
+                ]
+            };
+
+            // Bosses: grades maiores (20×20)
+            const BOSS_GRIDS = {
+                DRAGON_BOSS: [
+                    '..hh............hh..',
+                    '...hh..........hh...',
+                    '....dddddddddddd....',
+                    '...dddddddddddddd...',
+                    '..ddYYBddddddYYBdd..',
+                    '..dddddddddddddddd..',
+                    '...ddddrrrrrrdddd...',
+                    '....dddd.rr.dddd....',
+                    'w....dddddddddd....w',
+                    'ww..dddddddddddd..ww',
+                    'www.dddddddddddd.www',
+                    'wwwwdddddddddddwwwww',
+                    'wwwddddddddddddddwww',
+                    '.ww.dddbbbbbbddd.ww.',
+                    '....ddbbbbbbbbdd....',
+                    '....dddd....dddd....',
+                    '...dddd......dddd...',
+                    '..hdd..........ddh..',
+                    '......dd....dd......',
+                    '.......dddddd.......'
+                ],
+                TITAN: [
+                    '....y..........y....',
+                    '...yy...tttt...yy...',
+                    '..yy..tttttttt..yy..',
+                    '......tttttttt......',
+                    '.....ttYYttYYtt.....',
+                    '.....tttttttttt.....',
+                    '......ttthhttt......',
+                    '....mmmmmmmmmmmm....',
+                    '...mmmmmmmmmmmmmm...',
+                    '..ymmmmmyymmmmmmy...',
+                    '..mmmmmyyyymmmmmm...',
+                    '.ymmmmmmyymmmmmmmy..',
+                    '..mmmmmmmmmmmmmm....',
+                    '...mmmmmmmmmmmm.....',
+                    '....mmmm..mmmm......',
+                    '....mmmm..mmmm......',
+                    '...mmmm....mmmm.....',
+                    '...mmm......mmm.....',
+                    '..mmmm......mmmm....',
+                    '....................'
+                ],
+                NIGHTMARE: [
+                    '....................',
+                    '......nnnnnnnn......',
+                    '....nnnnnnnnnnnn....',
+                    '...nnnnnnnnnnnnnn...',
+                    '..nnnnnWWWWWWnnnnn..',
+                    '..nnnnWWWWWWWWnnnn..',
+                    '.nnnnWWWRRRRWWWnnnn.',
+                    '.nnnnWWRRRRRRWWnnnn.',
+                    '.nnnnWWRRBBRRWWnnnn.',
+                    '.nnnnWWRRBBRRWWnnnn.',
+                    '.nnnnWWRRRRRRWWnnnn.',
+                    '..nnnnWWRRRRWWnnnn..',
+                    '..nnnnnWWWWWWnnnnn..',
+                    '...nnnnnnnnnnnnnn...',
+                    '....nn.nn.nn.nn.....',
+                    '...nn..nn..nn..nn...',
+                    '..nn...nn...nn...nn.',
+                    '.nn...nn.....nn...n.',
+                    '.n....n.......n.....',
+                    '....................'
+                ]
+            };
+
+            // Aparência de cada inimigo: grade + paleta + escala
+            const ENEMY_LOOKS = {
+                goblin:      { grid: 'GOBLIN', pal: { o: '#3f9e4a', O: '#5bc268', W: '#fff', B: '#111', r: '#f5f5f5', t: '#7a5230', b: '#4a3426', L: '#3b2a18', 0: '#5bc268' } },
+                slime:       { grid: 'SLIME', pal: { s: '#3ecf6a', h: '#a5f3c0', W: '#fff', B: '#111', d: '#1e8f44' } },
+                skeleton:    { grid: 'SKELETON', pal: { b: '#e8e4da', B: '#111', r: '#b8b4aa' } },
+                orc:         { grid: 'ORC', pal: { o: '#4a8f3e', W: '#fff', B: '#111', F: '#f5f5f5', t: '#6a4a2e', h: '#4a3426', O: '#4a8f3e', L: '#3b2a18' } },
+                zombie:      { grid: 'ZOMBIE', pal: { z: '#8aa86a', W: '#f5e642', B: '#111', r: '#5a4a3e', t: '#5a6a8a', L: '#3e4a66' } },
+                ghost:       { grid: 'GHOST', pal: { g: 'rgba(230,238,255,0.85)', B: '#1a2a4a', o: 'rgba(170,190,230,0.9)' } },
+                demon:       { grid: 'DEMON', pal: { d: '#c0392b', h: '#f0e6d4', Y: '#ffe34d', B: '#111', r: '#2a0a08', w: '#6a1e16' } },
+                vampire:     { grid: 'VAMPIRE', pal: { k: '#1a1a24', p: '#e8e0e6', R: '#e5484d', B: '#111', F: '#fff', c: '#6a1028', t: '#2a2a38', r: '#8a0f28', L: '#1a1a24' } },
+                werewolf:    { grid: 'WOLFMAN', pal: { f: '#7a5a3a', Y: '#ffe34d', B: '#111', F: '#fff', r: '#f5f5f5', c: '#e8e4da' } },
+                spider:      { grid: 'SPIDER', pal: { a: '#2c3444', l: '#1a202e', R: '#e5484d' } },
+                bat:         { grid: 'BAT', pal: { w: '#4a3a6a', b: '#2e2444', R: '#e5484d', B: '#111', f: '#f5f5f5' } },
+                snake:       { grid: 'SNAKE', pal: { s: '#2a9d6a', Y: '#ffe34d', B: '#111', r: '#e5484d', d: '#14684a' } },
+                troll:       { grid: 'ORC', pal: { o: '#7a8a6a', W: '#fff', B: '#111', F: '#f5f5f5', t: '#4a5a4a', h: '#36443a', O: '#7a8a6a', L: '#2e3a30' }, scale: 1.25 },
+                imp:         { grid: 'DEMON', pal: { d: '#e0662a', h: '#f0e6d4', Y: '#ffe34d', B: '#111', r: '#3a1408', w: '#8a3416' }, scale: 0.8 },
+                golem:       { grid: 'GOLEM', pal: { r: '#8a8f9c', G: '#ffd56b', m: '#5e6470' }, scale: 1.15 },
+                witch:       { grid: 'WITCH', pal: { h: '#5a2a8e', p: '#d8c8b8', G: '#9aff6a', B: '#111', r: '#8a2e5e', t: '#3a1e5e' } },
+                mummy:       { grid: 'SKELETON', pal: { b: '#d4bc8a', B: '#111', r: '#a8906a' } },
+                gargoyle:    { grid: 'DEMON', pal: { d: '#7e8694', h: '#aab2c0', Y: '#ffe34d', B: '#111', r: '#3a3f4a', w: '#575e6c' } },
+                elemental:   { grid: 'ELEMENTAL', pal: { e: 'rgba(110,190,255,0.9)', E: '#eaf6ff' } },
+                dragon_baby: { grid: 'DRAGON', pal: { d: '#d1495b', h: '#ffd56b', Y: '#ffe34d', B: '#111', r: '#5e1420', w: '#8a2435', b: '#f0a84a' } }
+            };
+            const BOSS_LOOKS = {
+                dragon_king: { grid: 'DRAGON_BOSS', boss: true, pal: { d: '#8b1a1a', h: '#ffd56b', Y: '#ffe34d', B: '#111', r: '#2e0505', w: '#5e1420', b: '#e08a2a' }, aura: 'rgba(229,72,77,0.5)' },
+                titan:       { grid: 'TITAN', boss: true, pal: { t: '#d8cfc0', Y: '#7fd7ff', h: '#4a4030', m: '#6a5aa8', y: '#ffe34d' }, aura: 'rgba(130,90,255,0.5)' },
+                nightmare:   { grid: 'NIGHTMARE', boss: true, pal: { n: '#1a1026', W: '#e8e4f4', R: '#e5484d', B: '#000' }, aura: 'rgba(90,20,120,0.6)' }
+            };
+
+            function renderGrid(grid, pal, scale) {
+                const rows = grid.length, cols = grid[0].length;
+                const S = Math.max(1, Math.round(3 * (scale || 1)));
+                const c = document.createElement('canvas');
+                c.width = cols * S; c.height = rows * S;
+                const g = c.getContext('2d');
+                for (let y = 0; y < rows; y++) {
+                    const row = grid[y];
+                    for (let x = 0; x < row.length; x++) {
+                        const col = pal[row[x]];
+                        if (!col) continue;
+                        g.fillStyle = col;
+                        g.fillRect(x * S, y * S, S, S);
+                    }
+                }
+                return c;
+            }
+
+            function getEnemySprite(type, isBoss = false, flip = false) {
+                const key = `e_${isBoss ? 'B' : 'n'}_${type}_${flip ? 1 : 0}`;
+                if (cache[key]) return cache[key];
+                const look = isBoss ? BOSS_LOOKS[type] : ENEMY_LOOKS[type];
+                if (!look) return null;
+                const grid = isBoss ? BOSS_GRIDS[look.grid] : GRIDS[look.grid];
+                let c = renderGrid(grid, look.pal, isBoss ? 2.2 : (look.scale || 1));
+                if (flip) {
+                    const f = document.createElement('canvas');
+                    f.width = c.width; f.height = c.height;
+                    const fg = f.getContext('2d');
+                    fg.translate(f.width, 0); fg.scale(-1, 1);
+                    fg.drawImage(c, 0, 0);
+                    c = f;
+                }
+                cache[key] = c;
+                return c;
+            }
+
+            function getBossAura(type) {
+                const look = BOSS_LOOKS[type];
+                return look ? look.aura : 'rgba(229,72,77,0.4)';
+            }
+
+            // ── Preview para menus (dataURL cacheado) ──
+            function heroPreviewURL(classKey, size = 48) {
+                const key = `url_${classKey}_${size}`;
+                if (cache[key]) return cache[key];
+                const base = getHeroSprite(classKey, 0, false);
+                const c = document.createElement('canvas');
+                c.width = size; c.height = Math.round(size * 54 / 48);
+                const g = c.getContext('2d');
+                g.imageSmoothingEnabled = false;
+                g.drawImage(base, 0, 0, c.width, c.height);
+                cache[key] = c.toDataURL();
+                return cache[key];
+            }
+            function heroPreviewHTML(classKey, size = 48) {
+                const h = Math.round(size * 54 / 48);
+                return `<img src="${heroPreviewURL(classKey, size)}" width="${size}" height="${h}" style="image-rendering:pixelated;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.6));" alt="">`;
+            }
+
+            return { getHeroSprite, getEnemySprite, getBossAura, heroPreviewURL, heroPreviewHTML, shadeColor };
+        })();
+
+        // ════════════════════════════════════════════════════════════
+        // ✦ REALM FX — PARTÍCULAS, SOM, SHAKE, DIA/NOITE, CLIMA ✦
+        // ════════════════════════════════════════════════════════════
+
+        // ── Partículas ──
+        let particles = [];
+        function spawnParticles(x, y, opts = {}) {
+            const count = opts.count || 8;
+            for (let i = 0; i < count; i++) {
+                const ang = opts.angle !== undefined
+                    ? opts.angle + (Math.random() - 0.5) * (opts.spread || 0.8)
+                    : Math.random() * Math.PI * 2;
+                const spd = (opts.speed || 2) * (0.4 + Math.random() * 0.9);
+                particles.push({
+                    x, y,
+                    vx: Math.cos(ang) * spd,
+                    vy: Math.sin(ang) * spd - (opts.lift || 0),
+                    life: (opts.life || 28) * (0.6 + Math.random() * 0.7),
+                    maxLife: opts.life || 28,
+                    size: (opts.size || 3) * (0.6 + Math.random() * 0.8),
+                    color: Array.isArray(opts.color) ? opts.color[Math.floor(Math.random() * opts.color.length)] : (opts.color || '#ffd56b'),
+                    gravity: opts.gravity || 0,
+                    glow: opts.glow || false
+                });
+            }
+            if (particles.length > 600) particles.splice(0, particles.length - 600);
+        }
+        function updateDrawParticles(cameraX, cameraY) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.vy += p.gravity;
+                p.vx *= 0.96; p.vy *= 0.96;
+                p.life--;
+                if (p.life <= 0) { particles.splice(i, 1); continue; }
+                const a = Math.max(0, Math.min(1, p.life / p.maxLife));
+                ctx.globalAlpha = a;
+                if (p.glow) {
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 8;
+                }
+                ctx.fillStyle = p.color;
+                const s = p.size * (0.5 + a * 0.5);
+                ctx.fillRect(p.x - cameraX - s / 2, p.y - cameraY - s / 2, s, s);
+                ctx.shadowBlur = 0;
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // ── Screen shake ──
+        let shakeMag = 0;
+        function addShake(m) { shakeMag = Math.min(16, shakeMag + m); }
+
+        // ── Sons sintetizados (sem arquivos) ──
+        const SFX = (() => {
+            let ac = null, master = null, muted = localStorage.getItem('realmMuted') === '1';
+            function ensure() {
+                if (!ac) {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (!AC) return null;
+                    ac = new AC();
+                    master = ac.createGain();
+                    master.gain.value = 0.3;
+                    master.connect(ac.destination);
+                }
+                if (ac.state === 'suspended') ac.resume();
+                return ac;
+            }
+            function tone(freq, dur, type = 'square', vol = 0.2, slide = 0, delay = 0) {
+                if (!ensure()) return;
+                const t = ac.currentTime + delay;
+                const o = ac.createOscillator();
+                const g = ac.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                if (slide) o.frequency.linearRampToValueAtTime(Math.max(30, freq + slide), t + dur);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+                o.connect(g); g.connect(master);
+                o.start(t); o.stop(t + dur + 0.02);
+            }
+            function noise(dur = 0.1, vol = 0.15, delay = 0) {
+                if (!ensure()) return;
+                const t = ac.currentTime + delay;
+                const len = Math.max(1, Math.floor(ac.sampleRate * dur));
+                const buf = ac.createBuffer(1, len, ac.sampleRate);
+                const d = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+                const src = ac.createBufferSource();
+                src.buffer = buf;
+                const g = ac.createGain();
+                g.gain.value = vol;
+                src.connect(g); g.connect(master);
+                src.start(t);
+            }
+            const lib = {
+                attack:  () => { tone(480, 0.07, 'square', 0.1, -180); },
+                skill:   () => { tone(700, 0.12, 'triangle', 0.16, -260); tone(1050, 0.1, 'sine', 0.1, -200, 0.03); },
+                hit:     () => { noise(0.06, 0.14); tone(170, 0.08, 'sawtooth', 0.12, -70); },
+                crit:    () => { noise(0.08, 0.18); tone(840, 0.13, 'square', 0.16, -380); },
+                pickup:  () => { tone(660, 0.07, 'sine', 0.14, 200); tone(990, 0.1, 'sine', 0.12, 280, 0.07); },
+                levelup: () => { [440, 554, 659, 880].forEach((f, i) => tone(f, 0.17, 'triangle', 0.17, 0, i * 0.09)); },
+                death:   () => { tone(220, 0.5, 'sawtooth', 0.2, -170); noise(0.35, 0.16, 0.05); },
+                hurt:    () => { tone(140, 0.16, 'square', 0.18, -60); },
+                boss:    () => { tone(75, 0.8, 'sawtooth', 0.26, -25); tone(55, 0.9, 'square', 0.2, -12, 0.12); noise(0.5, 0.12, 0.1); },
+                dash:    () => { noise(0.1, 0.1); tone(320, 0.12, 'sine', 0.1, 320); },
+                kill:    () => { tone(392, 0.08, 'triangle', 0.14, 0); tone(523, 0.12, 'triangle', 0.12, 0, 0.07); },
+            };
+            return {
+                play(name) { if (muted) return; try { if (lib[name]) lib[name](); } catch (e) { /* áudio indisponível */ } },
+                toggle() { muted = !muted; localStorage.setItem('realmMuted', muted ? '1' : '0'); return muted; },
+                isMuted() { return muted; }
+            };
+        })();
+
+        // ── Ciclo dia/noite (visual, sutil) ──
+        let worldTime = 0;          // avança no gameLoop
+        const DAY_LENGTH = 14400;   // ~4 min por ciclo a 60fps
+        function getDaylight() {
+            // 1 = meio-dia, 0 = meia-noite (nunca escurece demais)
+            return 0.5 + 0.5 * Math.sin((worldTime / DAY_LENGTH) * Math.PI * 2);
+        }
+
+        // ── Clima ambiente por bioma (flocos, areia, vagalumes) ──
+        let ambientFx = [];
+        function updateDrawAmbient(cameraX, cameraY, biomeKey, daylight) {
+            // Spawn
+            if (ambientFx.length < 70 && Math.random() < 0.5) {
+                const x = cameraX + Math.random() * canvas.width;
+                const y = cameraY - 20 + Math.random() * (canvas.height * 0.3);
+                if (biomeKey === 'ice') {
+                    ambientFx.push({ kind: 'snow', x, y, vx: 0.3 + Math.random() * 0.5, vy: 0.7 + Math.random() * 0.9, size: 1.5 + Math.random() * 2.5, life: 400, phase: Math.random() * 10 });
+                } else if (biomeKey === 'desert') {
+                    ambientFx.push({ kind: 'sand', x, y: cameraY + Math.random() * canvas.height, vx: 1.6 + Math.random() * 1.8, vy: -0.1 + Math.random() * 0.25, size: 1 + Math.random() * 2, life: 220, phase: Math.random() * 10 });
+                } else if (daylight < 0.4) {
+                    // vagalumes só à noite na grama
+                    ambientFx.push({ kind: 'firefly', x: cameraX + Math.random() * canvas.width, y: cameraY + Math.random() * canvas.height, vx: 0, vy: 0, size: 2, life: 500, phase: Math.random() * 10 });
+                } else if (Math.random() < 0.25) {
+                    ambientFx.push({ kind: 'leaf', x, y, vx: 0.4 + Math.random() * 0.7, vy: 0.5 + Math.random() * 0.6, size: 2 + Math.random() * 2, life: 380, phase: Math.random() * 10 });
+                }
+            }
+            // Update + draw
+            for (let i = ambientFx.length - 1; i >= 0; i--) {
+                const p = ambientFx[i];
+                p.phase += 0.04;
+                if (p.kind === 'firefly') {
+                    p.x += Math.sin(p.phase * 1.7) * 0.8;
+                    p.y += Math.cos(p.phase * 1.3) * 0.6;
+                } else {
+                    p.x += p.vx + Math.sin(p.phase) * 0.4;
+                    p.y += p.vy;
+                }
+                p.life--;
+                const sx = p.x - cameraX, sy = p.y - cameraY;
+                if (p.life <= 0 || sx < -40 || sx > canvas.width + 40 || sy > canvas.height + 40) {
+                    ambientFx.splice(i, 1);
+                    continue;
+                }
+                if (p.kind === 'snow') {
+                    ctx.globalAlpha = 0.85;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath(); ctx.arc(sx, sy, p.size, 0, Math.PI * 2); ctx.fill();
+                } else if (p.kind === 'sand') {
+                    ctx.globalAlpha = 0.4;
+                    ctx.fillStyle = '#e8c87a';
+                    ctx.fillRect(sx, sy, p.size * 2.5, p.size * 0.8);
+                } else if (p.kind === 'firefly') {
+                    const tw = 0.4 + 0.6 * Math.abs(Math.sin(p.phase * 2.2));
+                    ctx.globalAlpha = tw * 0.9;
+                    ctx.shadowColor = '#d8ff6a'; ctx.shadowBlur = 8;
+                    ctx.fillStyle = '#eaff9a';
+                    ctx.beginPath(); ctx.arc(sx, sy, p.size, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 0;
+                } else { // leaf
+                    ctx.globalAlpha = 0.7;
+                    ctx.fillStyle = '#7ec850';
+                    ctx.save();
+                    ctx.translate(sx, sy);
+                    ctx.rotate(Math.sin(p.phase) * 0.9);
+                    ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+                    ctx.restore();
+                }
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // ── Texturas procedurais de chão por bioma ──
+        const groundPatterns = {};
+        function getGroundPattern(key) {
+            if (groundPatterns[key]) return groundPatterns[key];
+            const c = document.createElement('canvas');
+            c.width = 128; c.height = 128;
+            const g = c.getContext('2d');
+            const rnd = mulberry32(key === 'grass' ? 101 : key === 'ice' ? 202 : 303);
+            if (key === 'grass') {
+                g.fillStyle = '#2f5231'; g.fillRect(0, 0, 128, 128);
+                for (let i = 0; i < 160; i++) { // manchas de tons
+                    g.fillStyle = ['#2a4a2c', '#335936', '#2c4e2e', '#38603a'][Math.floor(rnd() * 4)];
+                    g.fillRect(Math.floor(rnd() * 128), Math.floor(rnd() * 128), 3 + rnd() * 6, 3 + rnd() * 6);
+                }
+                for (let i = 0; i < 90; i++) { // folhas de grama
+                    const x = rnd() * 128, y = rnd() * 128;
+                    g.strokeStyle = rnd() < 0.5 ? '#4a7a4c' : '#3e6a40';
+                    g.lineWidth = 1;
+                    g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - 0.5) * 2, y - 3 - rnd() * 3); g.stroke();
+                }
+                for (let i = 0; i < 8; i++) { // florzinhas
+                    g.fillStyle = rnd() < 0.5 ? '#e8e06a' : '#e88ab0';
+                    g.fillRect(rnd() * 126, rnd() * 126, 2, 2);
+                }
+            } else if (key === 'ice') {
+                g.fillStyle = '#cfe9f2'; g.fillRect(0, 0, 128, 128);
+                for (let i = 0; i < 120; i++) {
+                    g.fillStyle = ['#c2e0ec', '#daf0f8', '#c8e5f0', '#e4f6fc'][Math.floor(rnd() * 4)];
+                    g.fillRect(Math.floor(rnd() * 128), Math.floor(rnd() * 128), 4 + rnd() * 8, 3 + rnd() * 5);
+                }
+                g.strokeStyle = 'rgba(140,190,220,0.5)'; g.lineWidth = 1;
+                for (let i = 0; i < 7; i++) { // rachaduras no gelo
+                    let x = rnd() * 128, y = rnd() * 128;
+                    g.beginPath(); g.moveTo(x, y);
+                    for (let s = 0; s < 3; s++) { x += (rnd() - 0.5) * 24; y += (rnd() - 0.5) * 24; g.lineTo(x, y); }
+                    g.stroke();
+                }
+                for (let i = 0; i < 14; i++) { // brilhos
+                    g.fillStyle = 'rgba(255,255,255,0.8)';
+                    g.fillRect(rnd() * 127, rnd() * 127, 1.5, 1.5);
+                }
+            } else { // desert
+                g.fillStyle = '#cda04e'; g.fillRect(0, 0, 128, 128);
+                for (let i = 0; i < 140; i++) {
+                    g.fillStyle = ['#c2903a', '#d4a854', '#c99a44', '#dcb268'][Math.floor(rnd() * 4)];
+                    g.fillRect(Math.floor(rnd() * 128), Math.floor(rnd() * 128), 4 + rnd() * 7, 2 + rnd() * 4);
+                }
+                g.strokeStyle = 'rgba(160,110,40,0.35)'; g.lineWidth = 1.5;
+                for (let i = 0; i < 9; i++) { // ondulações de duna
+                    const y = rnd() * 128;
+                    g.beginPath();
+                    g.moveTo(0, y);
+                    g.bezierCurveTo(32, y - 6 + rnd() * 12, 96, y - 6 + rnd() * 12, 128, y);
+                    g.stroke();
+                }
+                for (let i = 0; i < 6; i++) { // pedrinhas
+                    g.fillStyle = '#9a7430';
+                    g.fillRect(rnd() * 126, rnd() * 126, 2, 2);
+                }
+            }
+            const pat = ctx ? ctx.createPattern(c, 'repeat') : null;
+            groundPatterns[key] = pat;
+            return pat;
+        }
+        // PRNG determinístico p/ texturas iguais em todos os clientes
+        function mulberry32(a) {
+            return function () {
+                a |= 0; a = (a + 0x6D2B79F5) | 0;
+                let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        // ── Sprites de decoração (desenhados uma vez) ──
+        const decoSprites = {};
+        function getDecoSprite(type) {
+            if (decoSprites[type]) return decoSprites[type];
+            const c = document.createElement('canvas');
+            const g = c.getContext('2d');
+            const build = {
+                tree(cv, gg) {
+                    cv.width = 64; cv.height = 80;
+                    gg.fillStyle = '#5a3e22'; gg.fillRect(28, 52, 8, 26);         // tronco
+                    gg.fillStyle = '#4a3016'; gg.fillRect(34, 52, 2, 26);
+                    const leaf = (x, y, r, col) => { gg.fillStyle = col; gg.beginPath(); gg.arc(x, y, r, 0, Math.PI * 2); gg.fill(); };
+                    leaf(32, 34, 24, '#2e6b33'); leaf(18, 42, 16, '#2a5f2e');
+                    leaf(46, 42, 16, '#2a5f2e'); leaf(32, 22, 16, '#3a7f40');
+                    leaf(24, 28, 10, '#4a9850'); leaf(40, 30, 8, '#4a9850');
+                },
+                pine(cv, gg) {
+                    cv.width = 56; cv.height = 84;
+                    gg.fillStyle = '#4a3016'; gg.fillRect(25, 66, 6, 18);
+                    const tri = (y, w, col) => { gg.fillStyle = col; gg.beginPath(); gg.moveTo(28, y - 24); gg.lineTo(28 - w, y); gg.lineTo(28 + w, y); gg.closePath(); gg.fill(); };
+                    tri(70, 24, '#1f5226'); tri(54, 20, '#27652f'); tri(40, 15, '#2f7838');
+                },
+                pineSnow(cv, gg) {
+                    build.pine(cv, gg);
+                    gg.fillStyle = 'rgba(245,250,255,0.9)';
+                    gg.beginPath(); gg.moveTo(28, 16); gg.lineTo(18, 34); gg.lineTo(38, 34); gg.closePath(); gg.fill();
+                    gg.fillRect(12, 52, 32, 4); gg.fillRect(8, 68, 40, 4);
+                },
+                rock(cv, gg) {
+                    cv.width = 40; cv.height = 30;
+                    gg.fillStyle = '#7e8694';
+                    gg.beginPath();
+                    gg.moveTo(4, 26); gg.lineTo(8, 12); gg.lineTo(18, 4); gg.lineTo(32, 10); gg.lineTo(37, 26);
+                    gg.closePath(); gg.fill();
+                    gg.fillStyle = '#9aa3b2';
+                    gg.beginPath(); gg.moveTo(8, 12); gg.lineTo(18, 4); gg.lineTo(26, 8); gg.lineTo(14, 16); gg.closePath(); gg.fill();
+                    gg.fillStyle = '#5e6470'; gg.fillRect(10, 20, 14, 2);
+                },
+                bush(cv, gg) {
+                    cv.width = 40; cv.height = 28;
+                    const b = (x, y, r, col) => { gg.fillStyle = col; gg.beginPath(); gg.arc(x, y, r, 0, Math.PI * 2); gg.fill(); };
+                    b(14, 18, 10, '#2a5f2e'); b(26, 18, 10, '#2e6b33'); b(20, 12, 10, '#3a7f40');
+                    gg.fillStyle = '#e5484d'; gg.fillRect(12, 14, 3, 3); gg.fillRect(24, 18, 3, 3);
+                },
+                flowers(cv, gg) {
+                    cv.width = 34; cv.height = 22;
+                    const f = (x, y, col) => {
+                        gg.strokeStyle = '#3e6a40'; gg.lineWidth = 1.5;
+                        gg.beginPath(); gg.moveTo(x, y + 8); gg.lineTo(x, y); gg.stroke();
+                        gg.fillStyle = col;
+                        [[0, -3], [0, 3], [-3, 0], [3, 0]].forEach(d => { gg.beginPath(); gg.arc(x + d[0], y + d[1], 2.2, 0, Math.PI * 2); gg.fill(); });
+                        gg.fillStyle = '#ffe34d'; gg.beginPath(); gg.arc(x, y, 2, 0, Math.PI * 2); gg.fill();
+                    };
+                    f(7, 8, '#e88ab0'); f(18, 10, '#b08ae8'); f(28, 7, '#f5f5f5');
+                },
+                cactus(cv, gg) {
+                    cv.width = 44; cv.height = 60;
+                    gg.fillStyle = '#3e8a46';
+                    gg.fillRect(19, 10, 10, 48);
+                    gg.fillRect(7, 22, 8, 6); gg.fillRect(7, 14, 6, 14);
+                    gg.fillRect(31, 30, 8, 6); gg.fillRect(33, 22, 6, 14);
+                    gg.fillStyle = '#4fa858';
+                    gg.fillRect(21, 10, 3, 48); gg.fillRect(8, 14, 2, 12);
+                    gg.fillStyle = '#e8f0d0';
+                    for (let i = 0; i < 8; i++) gg.fillRect(19 + (i % 2) * 8, 14 + i * 6, 1.5, 3);
+                },
+                crystal(cv, gg) {
+                    cv.width = 40; cv.height = 52;
+                    const cr = (x, y, w, h, c1, c2) => {
+                        gg.fillStyle = c1;
+                        gg.beginPath(); gg.moveTo(x, y - h); gg.lineTo(x - w, y); gg.lineTo(x, y + 6); gg.lineTo(x + w, y); gg.closePath(); gg.fill();
+                        gg.fillStyle = c2;
+                        gg.beginPath(); gg.moveTo(x, y - h); gg.lineTo(x + w, y); gg.lineTo(x, y + 6); gg.closePath(); gg.fill();
+                    };
+                    cr(14, 40, 7, 26, '#7fd7ff', '#b8ecff');
+                    cr(28, 42, 6, 18, '#5ab8e8', '#9adcff');
+                    cr(21, 46, 5, 12, '#9adcff', '#d8f4ff');
+                },
+                deadtree(cv, gg) {
+                    cv.width = 48; cv.height = 64;
+                    gg.strokeStyle = '#6a5a48'; gg.lineWidth = 5; gg.lineCap = 'round';
+                    gg.beginPath(); gg.moveTo(24, 62); gg.lineTo(24, 28); gg.stroke();
+                    gg.lineWidth = 3;
+                    gg.beginPath(); gg.moveTo(24, 40); gg.lineTo(10, 24); gg.stroke();
+                    gg.beginPath(); gg.moveTo(24, 32); gg.lineTo(38, 16); gg.stroke();
+                    gg.lineWidth = 2;
+                    gg.beginPath(); gg.moveTo(10, 24); gg.lineTo(6, 14); gg.stroke();
+                    gg.beginPath(); gg.moveTo(38, 16); gg.lineTo(44, 8); gg.stroke();
+                },
+                skull(cv, gg) {
+                    cv.width = 26; cv.height = 22;
+                    gg.fillStyle = '#e0dcd0';
+                    gg.beginPath(); gg.arc(13, 9, 8, 0, Math.PI * 2); gg.fill();
+                    gg.fillRect(8, 13, 10, 6);
+                    gg.fillStyle = '#2a2a2a';
+                    gg.beginPath(); gg.arc(10, 9, 2, 0, Math.PI * 2); gg.fill();
+                    gg.beginPath(); gg.arc(16, 9, 2, 0, Math.PI * 2); gg.fill();
+                    gg.fillRect(12.5, 12, 1.5, 3);
+                },
+                house(cv, gg) {
+                    cv.width = 96; cv.height = 92;
+                    gg.fillStyle = '#9a7450'; gg.fillRect(14, 44, 68, 44);        // parede
+                    gg.fillStyle = '#8a6440'; gg.fillRect(14, 44, 68, 5);
+                    gg.fillStyle = '#7e2f22';                                      // telhado
+                    gg.beginPath(); gg.moveTo(6, 48); gg.lineTo(48, 10); gg.lineTo(90, 48); gg.closePath(); gg.fill();
+                    gg.fillStyle = '#93392a';
+                    gg.beginPath(); gg.moveTo(12, 46); gg.lineTo(48, 14); gg.lineTo(58, 23); gg.lineTo(20, 46); gg.closePath(); gg.fill();
+                    gg.fillStyle = '#4a3016'; gg.fillRect(40, 60, 16, 28);         // porta
+                    gg.fillStyle = '#d8b84a'; gg.fillRect(52, 72, 2.5, 2.5);       // maçaneta
+                    gg.fillStyle = '#ffe9b0';                                      // janelas
+                    gg.fillRect(20, 56, 13, 12); gg.fillRect(63, 56, 13, 12);
+                    gg.strokeStyle = '#4a3016'; gg.lineWidth = 1.5;
+                    gg.strokeRect(20, 56, 13, 12); gg.strokeRect(63, 56, 13, 12);
+                    gg.beginPath(); gg.moveTo(26.5, 56); gg.lineTo(26.5, 68); gg.moveTo(69.5, 56); gg.lineTo(69.5, 68); gg.stroke();
+                },
+                snowman(cv, gg) {
+                    cv.width = 36; cv.height = 46;
+                    gg.fillStyle = '#f4f8ff';
+                    gg.beginPath(); gg.arc(18, 34, 11, 0, Math.PI * 2); gg.fill();
+                    gg.beginPath(); gg.arc(18, 17, 8, 0, Math.PI * 2); gg.fill();
+                    gg.fillStyle = '#1a1a2a';
+                    gg.beginPath(); gg.arc(15, 15, 1.4, 0, Math.PI * 2); gg.fill();
+                    gg.beginPath(); gg.arc(21, 15, 1.4, 0, Math.PI * 2); gg.fill();
+                    gg.fillStyle = '#e07b2a';
+                    gg.beginPath(); gg.moveTo(18, 18); gg.lineTo(26, 19.5); gg.lineTo(18, 21); gg.closePath(); gg.fill();
+                    gg.fillStyle = '#1a1a2a';
+                    gg.fillRect(12, 6, 12, 3); gg.fillRect(14, 1, 8, 6);
+                }
+            };
+            if (build[type]) build[type](c, g);
+            decoSprites[type] = c;
+            return c;
+        }
+
+        // ── Minimapa (tecla M) ──
+        let minimapOpen = false;
+
+        // ── Rastreio visual de inimigos (flash de dano, direção, morte) ──
+        const enemyVis = new Map(); // id -> { hp, x, y, facing, flashUntil }
+
         const CLASSES = {
             // BÁSICAS (15)
             warrior: { icon: '⚔️', emoji: '🧔', name: 'Guerreiro', hp: 150, mp: 30, speed: 3, skills: ['⚔️', '🛡️', '💪', '⚡'], advanced: false },
@@ -2042,7 +3458,7 @@
                     slot.className = 'character-slot';
                     slot.innerHTML = `
                         <div class="character-info">
-                            <div class="character-icon">${CLASSES[char.class].emoji}</div>
+                            <div class="character-icon">${GFX.heroPreviewHTML(char.class, 44)}</div>
                             <div class="character-details">
                                 <div class="character-name">${char.name}</div>
                                 <div class="character-stats">${CLASSES[char.class].name} - Nível ${char.level}</div>
@@ -2149,7 +3565,7 @@
                 
                 card.innerHTML = `
                     ${requirementBadge}
-                    <div class="class-icon">${classData.icon}</div>
+                    <div class="class-icon">${GFX.heroPreviewHTML(classKey, 40)}</div>
                     <div class="class-name">${classData.name}</div>
                     <div class="class-desc">${specialDesc}</div>
                     ${lvlBadge}
@@ -2349,7 +3765,7 @@
             const name  = document.getElementById('selectedCharName');
             const level = document.getElementById('selectedCharLevel');
             const cls   = document.getElementById('selectedCharClass');
-            if (icon  && CLASSES[selectedChar.class]) icon.textContent  = CLASSES[selectedChar.class].emoji;
+            if (icon  && CLASSES[selectedChar.class]) icon.innerHTML = GFX.heroPreviewHTML(selectedChar.class, 52);
             if (name)  name.textContent  = selectedChar.name  || '?';
             if (level) level.textContent = selectedChar.level || 1;
             if (cls   && CLASSES[selectedChar.class]) cls.textContent   = CLASSES[selectedChar.class].name;
@@ -2712,10 +4128,12 @@
             gameRunning = false;
             // Esconde todos os elementos de jogo
             ['gameCanvas','hud','skills','inventory','playersList',
-             'chat','exitButton','armorSlotPanel','clanBadge'].forEach(id => {
+             'chat','exitButton','armorSlotPanel','clanBadge',
+             'controlsHint','bossBar'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.remove('active');
             });
+            minimapOpen = false;
             // Volta para o menu
             showMainMenu();
         }
@@ -2795,15 +4213,74 @@
         const HOUSE_EMOJI = '🏠';
 
         function generateDecorations() {
-            // Decorações por emoji removidas (conflito visual com itens).
-            // Lagoinhas mantidas pois são formas geométricas, não emojis.
+            // Reconstruído no Overhaul 2.0: cada bioma recebe cenário desenhado
+            // (árvores, pinheiros nevados, cristais, cactos, casas...).
+            // Continua sendo dados puros {x, y, deco} — sincroniza host→cliente
+            // pela mensagem 'start' exatamente como antes.
             decorations = [];
+
             const lakeCount = 22;
             for (let i = 0; i < lakeCount; i++) {
                 const tx = Math.floor(Math.random() * (WORLD_WIDTH - 6)) + 2;
                 const ty = Math.floor(Math.random() * (WORLD_HEIGHT - 6)) + 2;
                 const r  = 1 + Math.floor(Math.random() * 3);
                 decorations.push({ x: tx * TILE_SIZE, y: ty * TILE_SIZE, lake: true, r: r });
+            }
+
+            // Tabelas de pesos por bioma (tipo → chance relativa)
+            const TABLE_GRASS  = [['tree', 5], ['pine', 2], ['bush', 3], ['flowers', 3], ['rock', 2], ['deadtree', 1]];
+            const TABLE_ICE    = [['pineSnow', 5], ['crystal', 3], ['rock', 3], ['snowman', 1]];
+            const TABLE_DESERT = [['cactus', 5], ['rock', 3], ['skull', 2], ['deadtree', 2]];
+            const pick = (table) => {
+                const total = table.reduce((s, t) => s + t[1], 0);
+                let r = Math.random() * total;
+                for (const [type, w] of table) { r -= w; if (r <= 0) return type; }
+                return table[0][0];
+            };
+
+            // Espalhamento base por todo o mundo
+            const DECO_COUNT = 2800;
+            for (let i = 0; i < DECO_COUNT; i++) {
+                const tx = 1 + Math.floor(Math.random() * (WORLD_WIDTH - 2));
+                const ty = 1 + Math.floor(Math.random() * (WORLD_HEIGHT - 2));
+                const pct = ty / WORLD_HEIGHT;
+                const table = pct < 0.33 ? TABLE_ICE : pct > 0.66 ? TABLE_DESERT : TABLE_GRASS;
+                decorations.push({
+                    x: tx * TILE_SIZE + Math.floor(Math.random() * TILE_SIZE),
+                    y: ty * TILE_SIZE + Math.floor(Math.random() * TILE_SIZE),
+                    deco: pick(table)
+                });
+            }
+
+            // Aglomerados: florestas na grama, pinheirais no gelo, cactais no deserto
+            const CLUSTERS = [
+                { count: 150, types: ['tree', 'tree', 'tree', 'pine', 'bush'], yMin: 0.34, yMax: 0.65, spread: 5 },
+                { count: 70,  types: ['pineSnow', 'pineSnow', 'crystal', 'rock'], yMin: 0.02, yMax: 0.32, spread: 5 },
+                { count: 60,  types: ['cactus', 'cactus', 'rock', 'skull'], yMin: 0.67, yMax: 0.98, spread: 5 }
+            ];
+            CLUSTERS.forEach(cl => {
+                for (let c = 0; c < cl.count; c++) {
+                    const cx = 3 + Math.floor(Math.random() * (WORLD_WIDTH - 6));
+                    const cy = Math.floor(WORLD_HEIGHT * (cl.yMin + Math.random() * (cl.yMax - cl.yMin)));
+                    const n = 6 + Math.floor(Math.random() * 9);
+                    for (let k = 0; k < n; k++) {
+                        const tx = cx + Math.round((Math.random() - 0.5) * cl.spread * 2);
+                        const ty = cy + Math.round((Math.random() - 0.5) * cl.spread * 2);
+                        if (tx < 1 || ty < 1 || tx >= WORLD_WIDTH - 1 || ty >= WORLD_HEIGHT - 1) continue;
+                        decorations.push({
+                            x: tx * TILE_SIZE + Math.floor(Math.random() * TILE_SIZE),
+                            y: ty * TILE_SIZE + Math.floor(Math.random() * TILE_SIZE),
+                            deco: cl.types[Math.floor(Math.random() * cl.types.length)]
+                        });
+                    }
+                }
+            });
+
+            // Casinhas raras, só na faixa de grama
+            for (let i = 0; i < 26; i++) {
+                const tx = 3 + Math.floor(Math.random() * (WORLD_WIDTH - 6));
+                const ty = Math.floor(WORLD_HEIGHT * (0.34 + Math.random() * 0.30));
+                decorations.push({ x: tx * TILE_SIZE, y: ty * TILE_SIZE, deco: 'house' });
             }
         }
 
@@ -2899,6 +4376,8 @@
         }
 
         function showBossWarning(bossName = 'BOSS APARECEU') {
+            SFX.play('boss');
+            addShake(8);
             const warning = document.getElementById('bossWarning');
             document.getElementById('bossWarningTitle').textContent = `👹 ${bossName}! 👹`;
             document.getElementById('bossWarningText').textContent = 'Prepare-se para a batalha!';
@@ -2911,7 +4390,11 @@
 
         function playerDeath(killerName = 'um inimigo') {
             if (!myPlayer) return;
-            
+
+            SFX.play('death');
+            addShake(10);
+            spawnParticles(myPlayer.x, myPlayer.y, { count: 24, color: ['#e5484d', '#8a1e1e', '#d8d8d8'], speed: 3.5, life: 40, size: 4, gravity: 0.08 });
+
             const classData = CLASSES[myPlayer.class];
             
             // Desequipa armadura antes de resetar stats
@@ -3351,6 +4834,7 @@
             document.getElementById('chat').classList.add('active');
             document.getElementById('exitButton').classList.add('active');
             document.getElementById('armorSlotPanel').classList.add('active');
+            document.getElementById('controlsHint').classList.add('active');
             updateArmorSlot();
             updateClanBadge();
 
@@ -3612,6 +5096,14 @@
         
         document.addEventListener('keydown', (e) => {
             if (!gameRunning) return;
+
+            // Enquanto digita no chat, nenhuma tecla vira comando do jogo
+            const chatFocused = document.getElementById('chatInput').matches(':focus');
+            if (chatFocused) {
+                if (e.key === 'Escape') document.getElementById('chatInput').blur();
+                return;
+            }
+
             keys[e.key.toLowerCase()] = true;
 
             if (e.key >= '1' && e.key <= '4') {
@@ -3623,8 +5115,31 @@
                 inv.style.display = inv.style.display === 'none' || !inv.style.display ? 'block' : 'none';
             }
 
-            if (e.key.toLowerCase() === 'r' && !document.getElementById('chatInput').matches(':focus')) {
+            if (e.key.toLowerCase() === 'r') {
                 if (rankingOpen) closeRanking(); else openRanking();
+            }
+
+            // Minimapa
+            if (e.key.toLowerCase() === 'm') {
+                minimapOpen = !minimapOpen;
+            }
+
+            // Som liga/desliga
+            if (e.key.toLowerCase() === 'v') {
+                const muted = SFX.toggle();
+                addChatMessage('Sistema', muted ? '🔇 Som desligado' : '🔊 Som ligado', 'system');
+            }
+
+            // Dash (Espaço)
+            if (e.key === ' ' && myPlayer) {
+                e.preventDefault();
+                const nowT = performance.now();
+                if (!myPlayer.dashReadyAt || nowT >= myPlayer.dashReadyAt) {
+                    myPlayer.dashTime = 10;                 // frames de impulso
+                    myPlayer.dashReadyAt = nowT + 2000;     // 2s de recarga
+                    SFX.play('dash');
+                    spawnParticles(myPlayer.x, myPlayer.y, { count: 10, color: ['#ffffff', '#ffd56b'], speed: 2.5, life: 18, size: 3, glow: true });
+                }
             }
 
             if (e.key.toLowerCase() === 'enter') {
@@ -3655,21 +5170,29 @@
 
             let moved = false;
 
+            // Dash: impulso temporário de velocidade (Espaço)
+            let spd = myPlayer.speed;
+            if (myPlayer.dashTime > 0) {
+                spd *= 2.6;
+                myPlayer.dashTime--;
+                spawnParticles(myPlayer.x, myPlayer.y + 14, { count: 2, color: ['#ffffff', '#ffd56b', '#d8e4ff'], speed: 1.2, life: 14, size: 2.5, glow: true });
+            }
+
             if (keys['w'] || keys['arrowup']) {
-                myPlayer.vy = -myPlayer.speed;
+                myPlayer.vy = -spd;
                 moved = true;
             } else if (keys['s'] || keys['arrowdown']) {
-                myPlayer.vy = myPlayer.speed;
+                myPlayer.vy = spd;
                 moved = true;
             } else {
                 myPlayer.vy = 0;
             }
 
             if (keys['a'] || keys['arrowleft']) {
-                myPlayer.vx = -myPlayer.speed;
+                myPlayer.vx = -spd;
                 moved = true;
             } else if (keys['d'] || keys['arrowright']) {
-                myPlayer.vx = myPlayer.speed;
+                myPlayer.vx = spd;
                 moved = true;
             } else {
                 myPlayer.vx = 0;
@@ -3723,6 +5246,8 @@
 
             myPlayer.inventory.push(item);
             items.splice(index, 1);
+            SFX.play('pickup');
+            spawnParticles(item.x, item.y, { count: 8, color: ['#ffd56b', '#fff1a8', '#ffffff'], speed: 2, life: 22, size: 3, lift: 1.2, glow: true });
 
             // Notifica todos sobre a coleta:
             // - Se for o host: rebroadcast direto para clientes removerem.
@@ -3787,7 +5312,12 @@
         function attack() {
             const angle = myPlayer.aimAngle;
             const rarityMult = getRarityAtkMult(myPlayer.class);
-            
+
+            // Acerto crítico: 12% de chance, 1.75x de dano
+            const isCrit = Math.random() < 0.12;
+            const damage = Math.floor(myPlayer.atk * rarityMult * (isCrit ? 1.75 : 1));
+
+            const rarKey = CLASS_RARITY[myPlayer.class] || 'common';
             const projectile = {
                 id: Math.random().toString(36).substr(2, 9),
                 x: myPlayer.x,
@@ -3795,12 +5325,17 @@
                 vx: Math.cos(angle) * 8,
                 vy: Math.sin(angle) * 8,
                 icon: CLASSES[myPlayer.class].emoji,
-                damage: Math.floor(myPlayer.atk * rarityMult),
+                col: (RARITY[rarKey] || RARITY.common).color,  // cor do projétil pela raridade
+                crit: isCrit,
+                damage: damage,
                 life: 100,
                 owner: myId
             };
 
             projectiles.push(projectile);
+            SFX.play('attack');
+            spawnParticles(myPlayer.x + Math.cos(angle) * 20, myPlayer.y + Math.sin(angle) * 20,
+                { count: 4, color: projectile.col, speed: 1.6, life: 12, size: 2.5, angle, spread: 0.6, glow: true });
 
             broadcast({
                 type: 'projectile',
@@ -3821,6 +5356,7 @@
             }
 
             myPlayer.mp -= skillMpCost[index];
+            SFX.play('skill');
 
             // HABILIDADE ESPECIAL: Investida do Cavaleiro Divino
             if (CLASSES[myPlayer.class].hasSpecialSkill && index === 1) {
@@ -4042,6 +5578,9 @@
 
             addChatMessage('Sistema', `🎉 LEVEL UP! Você é agora nível ${myPlayer.level}!`, 'system');
             showDamageNumber(myPlayer.x, myPlayer.y, 'LEVEL UP!', true);
+            SFX.play('levelup');
+            addShake(3);
+            spawnParticles(myPlayer.x, myPlayer.y, { count: 26, color: ['#ffd56b', '#fff1a8', '#7fd7ff', '#ffffff'], speed: 3.5, life: 40, size: 4, lift: 1.5, glow: true });
             
             updateHUD();
             saveCharacterProgress();
@@ -4215,13 +5754,15 @@
             }
         }
 
-        function showDamageNumber(x, y, damage, isHeal = false) {
+        function showDamageNumber(x, y, damage, isHeal = false, isCrit = false) {
             const cameraX = myPlayer ? myPlayer.x - canvas.width / 2 : 0;
             const cameraY = myPlayer ? myPlayer.y - canvas.height / 2 : 0;
-            
+
             const num = document.createElement('div');
-            num.className = 'damage-number' + (isHeal ? ' heal' : '');
-            num.textContent = typeof damage === 'number' ? (isHeal ? '+' : '-') + damage : damage;
+            num.className = 'damage-number' + (isHeal ? ' heal' : '') + (isCrit ? ' crit' : '');
+            num.textContent = typeof damage === 'number'
+                ? (isHeal ? '+' : '-') + damage + (isCrit ? '!' : '')
+                : damage;
             num.style.left = (x - cameraX) + 'px';
             num.style.top = (y - cameraY) + 'px';
             document.body.appendChild(num);
@@ -4230,6 +5771,19 @@
 
         function updateHUD() {
             if (!myPlayer) return;
+
+            // Retrato do herói (inserido uma vez)
+            let portrait = document.getElementById('hudPortrait');
+            if (!portrait) {
+                portrait = document.createElement('img');
+                portrait.id = 'hudPortrait';
+                const info = document.querySelector('#hud .player-info');
+                if (info) info.insertBefore(portrait, info.firstChild);
+            }
+            if (portrait && portrait.dataset.cls !== myPlayer.class) {
+                portrait.src = GFX.heroPreviewURL(myPlayer.class, 48);
+                portrait.dataset.cls = myPlayer.class;
+            }
 
             // Nome com cor da raridade + tag de clã
             const rarKey = CLASS_RARITY[myPlayer.class] || 'common';
@@ -4281,207 +5835,421 @@
                 const rarColor = (RARITY[rarKey] || RARITY.common).color;
                 const clan = p.clan ? `<span style="color:#9b59b6;font-size:0.8em;">[${p.clan}]</span> ` : '';
                 return `<div class="player-item">
-                    <span>${CLASSES[p.class].emoji} ${clan}<span style="color:${rarColor}">${p.name}</span></span>
+                    <span style="display:flex;align-items:center;gap:6px;">${GFX.heroPreviewHTML(p.class, 18)} ${clan}<span style="color:${rarColor}">${p.name}</span></span>
                     <span class="player-level">Lvl ${p.level}</span>
                 </div>`;
             }).join('');
         }
 
         function drawGame() {
-            // Cor de fundo padrão (grama — será sobrescrita pelos fills de bioma)
-            ctx.fillStyle = '#2d4a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const now = performance.now();
+            const daylight = getDaylight();
 
-            const cameraX = myPlayer ? myPlayer.x - canvas.width / 2 : 0;
-            const cameraY = myPlayer ? myPlayer.y - canvas.height / 2 : 0;
+            // ── Câmera (com screen shake) ──
+            let cameraX = myPlayer ? myPlayer.x - canvas.width / 2 : 0;
+            let cameraY = myPlayer ? myPlayer.y - canvas.height / 2 : 0;
+            if (shakeMag > 0.3) {
+                cameraX += (Math.random() - 0.5) * shakeMag * 2;
+                cameraY += (Math.random() - 0.5) * shakeMag * 2;
+                shakeMag *= 0.86;
+            } else shakeMag = 0;
 
-            // ── Viewport culling + biomas ──
-            // Renderiza apenas tiles visíveis. Cada tile tem cor de fundo e grade do bioma.
-            ctx.lineWidth = 1;
-            const startTileX = Math.max(0, Math.floor(cameraX / TILE_SIZE) - 1);
-            const startTileY = Math.max(0, Math.floor(cameraY / TILE_SIZE) - 1);
-            const endTileX   = Math.min(WORLD_WIDTH,  startTileX + Math.ceil(canvas.width  / TILE_SIZE) + 2);
-            const endTileY   = Math.min(WORLD_HEIGHT, startTileY + Math.ceil(canvas.height / TILE_SIZE) + 2);
+            // ── Chão: texturas procedurais por bioma (ancoradas no mundo) ──
+            // Limites dos biomas em pixels (os mesmos cortes de getBiome)
+            const iceEndPx     = Math.ceil(WORLD_HEIGHT * 0.33) * TILE_SIZE;
+            const desertStartPx = (Math.floor(WORLD_HEIGHT * 0.66) + 1) * TILE_SIZE;
+            ctx.save();
+            ctx.translate(-cameraX, -cameraY);
+            const viewL = cameraX - 8, viewR = cameraX + canvas.width + 8;
+            const viewT = cameraY - 8, viewB = cameraY + canvas.height + 8;
+            const bands = [
+                ['ice',    0,             iceEndPx],
+                ['grass',  iceEndPx,      desertStartPx],
+                ['desert', desertStartPx, WORLD_HEIGHT * TILE_SIZE]
+            ];
+            bands.forEach(([key, y0, y1]) => {
+                const top = Math.max(y0, viewT), bot = Math.min(y1, viewB);
+                if (bot <= top) return;
+                const pat = getGroundPattern(key);
+                ctx.fillStyle = pat || (key === 'ice' ? '#cfe9f2' : key === 'desert' ? '#cda04e' : '#2f5231');
+                ctx.fillRect(viewL, top, viewR - viewL, bot - top);
+            });
+            ctx.restore();
 
-            // Preenche cada linha de tiles com a cor do bioma (otimizado: agrupa por biome row)
-            let prevBiomeGround = null;
-            for (let y = startTileY; y < endTileY; y++) {
-                const biome = getBiome(y);
-                // Faixa horizontal de ground color (fill de toda a linha de uma vez)
-                if (biome.ground !== prevBiomeGround) {
-                    ctx.fillStyle = biome.ground;
-                    prevBiomeGround = biome.ground;
-                }
-                const screenY = y * TILE_SIZE - cameraY;
-                ctx.fillRect(startTileX * TILE_SIZE - cameraX, screenY,
-                             (endTileX - startTileX) * TILE_SIZE, TILE_SIZE);
-            }
-
-            // Grade dos tiles (cor por bioma)
-            for (let y = startTileY; y < endTileY; y++) {
-                const biome = getBiome(y);
-                ctx.strokeStyle = biome.border;
-                const screenY = y * TILE_SIZE - cameraY;
-                for (let x = startTileX; x < endTileX; x++) {
-                    const screenX = x * TILE_SIZE - cameraX;
-                    ctx.strokeRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
-                }
-            }
-
-            // ── Lagoinhas ──
+            // ── Lagoinhas (água animada) ──
             decorations.forEach(d => {
                 if (!d.lake) return;
                 const sx = d.x - cameraX;
                 const sy = d.y - cameraY;
                 const r  = d.r * TILE_SIZE;
-                if (sx < -r || sx > canvas.width + r || sy < -r || sy > canvas.height + r) return;
+                if (sx < -r * 2 || sx > canvas.width + r * 2 || sy < -r * 2 || sy > canvas.height + r * 2) return;
+                const cx2 = sx + r * 0.5, cy2 = sy + r * 0.5;
+                const wob = Math.sin(now / 900 + d.x * 0.01) * r * 0.03;
                 ctx.save();
+                // margem úmida
                 ctx.beginPath();
-                ctx.ellipse(sx + r * 0.5, sy + r * 0.5, r * 1.1, r * 0.75, 0, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(40,120,200,0.55)';
+                ctx.ellipse(cx2, cy2, r * 1.18 + wob, r * 0.82 + wob, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(60,80,50,0.45)';
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(80,160,240,0.7)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                // corpo d'água
+                const wg = ctx.createRadialGradient(cx2 - r * 0.3, cy2 - r * 0.25, r * 0.1, cx2, cy2, r * 1.1);
+                wg.addColorStop(0, 'rgba(90,170,230,0.9)');
+                wg.addColorStop(1, 'rgba(25,80,150,0.85)');
+                ctx.beginPath();
+                ctx.ellipse(cx2, cy2, r * 1.1 + wob, r * 0.75 + wob, 0, 0, Math.PI * 2);
+                ctx.fillStyle = wg;
+                ctx.fill();
+                // ondulações
+                ctx.strokeStyle = 'rgba(200,230,255,0.35)';
+                ctx.lineWidth = 1.5;
+                for (let k = 0; k < 2; k++) {
+                    const ph = (now / 1600 + k * 0.5 + d.y * 0.001) % 1;
+                    ctx.globalAlpha = 0.5 * (1 - ph);
+                    ctx.beginPath();
+                    ctx.ellipse(cx2, cy2, r * (0.3 + ph * 0.75), r * (0.2 + ph * 0.5), 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+                // brilho do sol
+                ctx.fillStyle = `rgba(255,255,255,${0.25 * daylight})`;
+                ctx.beginPath();
+                ctx.ellipse(cx2 - r * 0.35, cy2 - r * 0.25, r * 0.3, r * 0.12, -0.5, 0, Math.PI * 2);
+                ctx.fill();
                 ctx.restore();
             });
 
-            // Decorações por emoji removidas — apenas lagoinhas geométricas permanecem.
-
-            // ── Faixa de transição entre biomas (gradiente visual sutil) ──
-            // Linha de neve entre grama↔gelo
-            const iceBorderY  = Math.floor(WORLD_HEIGHT * 0.33) * TILE_SIZE - cameraY;
-            const sandBorderY = Math.floor(WORLD_HEIGHT * 0.66) * TILE_SIZE - cameraY;
+            // ── Faixa de transição entre biomas ──
+            const iceBorderY  = iceEndPx - cameraY;
+            const sandBorderY = desertStartPx - cameraY;
             ctx.save();
-            const iceGrad = ctx.createLinearGradient(0, iceBorderY - 16, 0, iceBorderY + 16);
-            iceGrad.addColorStop(0, 'rgba(200,232,245,0.6)');
+            const iceGrad = ctx.createLinearGradient(0, iceBorderY - 24, 0, iceBorderY + 24);
+            iceGrad.addColorStop(0, 'rgba(210,238,248,0.7)');
             iceGrad.addColorStop(1, 'rgba(45,74,46,0)');
             ctx.fillStyle = iceGrad;
-            ctx.fillRect(0, iceBorderY - 16, canvas.width, 32);
-            const sandGrad = ctx.createLinearGradient(0, sandBorderY - 16, 0, sandBorderY + 16);
+            ctx.fillRect(0, iceBorderY - 24, canvas.width, 48);
+            const sandGrad = ctx.createLinearGradient(0, sandBorderY - 24, 0, sandBorderY + 24);
             sandGrad.addColorStop(0, 'rgba(45,74,46,0)');
-            sandGrad.addColorStop(1, 'rgba(194,144,58,0.6)');
+            sandGrad.addColorStop(1, 'rgba(205,160,78,0.7)');
             ctx.fillStyle = sandGrad;
-            ctx.fillRect(0, sandBorderY - 16, canvas.width, 32);
+            ctx.fillRect(0, sandBorderY - 24, canvas.width, 48);
             ctx.restore();
 
-            // ── Borda do mundo ──
+            // ── Decorações rasteiras (sob as entidades) + lista das altas ──
+            const tallDecos = [];
+            const GROUND_DECOS = { flowers: 1, skull: 1, bush: 1, rock: 1 };
+            decorations.forEach(d => {
+                if (d.lake || !d.deco) return;
+                const spr = getDecoSprite(d.deco);
+                if (!spr || !spr.width) return;
+                const sx = d.x - cameraX;
+                const sy = d.y - cameraY;
+                if (sx < -120 || sx > canvas.width + 120 || sy < -140 || sy > canvas.height + 140) return;
+                if (GROUND_DECOS[d.deco]) {
+                    // sombra leve + sprite com "pé" na posição
+                    ctx.globalAlpha = 0.25;
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.ellipse(sx, sy + 2, spr.width * 0.4, spr.width * 0.14, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    ctx.drawImage(spr, sx - spr.width / 2, sy - spr.height + 4);
+                } else {
+                    tallDecos.push({ kind: 'deco', y: d.y, x: d.x, spr });
+                }
+            });
+
+            // ── Borda do mundo (névoa escura) ──
             ctx.save();
-            ctx.strokeStyle = 'rgba(255,100,0,0.6)';
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(20,10,30,0.55)';
+            ctx.lineWidth = 26;
+            ctx.strokeRect(-cameraX - 13, -cameraY - 13, WORLD_WIDTH * TILE_SIZE + 26, WORLD_HEIGHT * TILE_SIZE + 26);
+            ctx.strokeStyle = 'rgba(240,165,0,0.5)';
+            ctx.lineWidth = 3;
             ctx.strokeRect(-cameraX, -cameraY, WORLD_WIDTH * TILE_SIZE, WORLD_HEIGHT * TILE_SIZE);
             ctx.restore();
 
-            // Desenhar itens
+            // ════ ENTIDADES (Overhaul 2.0) ════
+            // Itens no chão: orbe brilhante + emoji flutuando + sombra
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
             items.forEach(item => {
                 const screenX = item.x - cameraX;
                 const screenY = item.y - cameraY;
-                
-                if (screenX > -TILE_SIZE && screenX < canvas.width && screenY > -TILE_SIZE && screenY < canvas.height) {
-                    ctx.font = '24px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(item.type, screenX, screenY);
+                if (screenX < -TILE_SIZE || screenX > canvas.width + TILE_SIZE || screenY < -TILE_SIZE || screenY > canvas.height + TILE_SIZE) return;
+                const bob = Math.sin(now / 420 + item.x * 0.05) * 4;
+                // sombra
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.ellipse(screenX, screenY + 14, 10, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                // orbe
+                const og = ctx.createRadialGradient(screenX, screenY + bob, 2, screenX, screenY + bob, 16);
+                og.addColorStop(0, 'rgba(255,240,180,0.85)');
+                og.addColorStop(1, 'rgba(255,200,60,0)');
+                ctx.fillStyle = og;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY + bob, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.font = '20px Arial';
+                ctx.fillText(item.type, screenX, screenY + bob);
+            });
+
+            // ── Lista de renderização ordenada por profundidade (y) ──
+            // Decorações altas + inimigos + jogadores desenham juntos,
+            // de cima para baixo, para dar noção de profundidade.
+            const renderList = tallDecos;
+            const seenEnemies = new Set();
+
+            enemies.forEach(enemy => {
+                seenEnemies.add(enemy.id);
+                let vis = enemyVis.get(enemy.id);
+                if (!vis) { vis = { hp: enemy.hp, x: enemy.x, y: enemy.y, facing: 1, flashUntil: 0 }; enemyVis.set(enemy.id, vis); }
+                if (enemy.hp < vis.hp) {
+                    vis.flashUntil = now + 140;
+                    spawnParticles(enemy.x, enemy.y, { count: 6, color: ['#ffdd66', '#ff8844', '#ffffff'], speed: 2.5, life: 20, size: 3, glow: true });
+                    if (now - (window.__lastHitFx || 0) > 70) {
+                        window.__lastHitFx = now;
+                        SFX.play('hit');
+                        addShake(1.4);
+                    }
+                }
+                if (Math.abs(enemy.x - vis.x) > 0.3) vis.facing = enemy.x > vis.x ? 1 : -1;
+                vis.hp = enemy.hp; vis.x = enemy.x; vis.y = enemy.y;
+                renderList.push({ kind: enemy.isBoss ? 'boss' : 'enemy', y: enemy.y, x: enemy.x, enemy, vis });
+            });
+
+            // Poof de morte: inimigos que sumiram desde o último frame
+            enemyVis.forEach((vis, id) => {
+                if (!seenEnemies.has(id)) {
+                    spawnParticles(vis.x, vis.y, { count: 14, color: ['#d8d8d8', '#9a9a9a', '#ffdd66'], speed: 3, life: 30, size: 4, lift: 1 });
+                    SFX.play('kill');
+                    enemyVis.delete(id);
                 }
             });
 
-            // Desenhar inimigos
-            enemies.forEach(enemy => {
-                const enemyData = enemy.isBoss ? BOSS_TYPES[enemy.type] : ENEMY_TYPES[enemy.type];
-                const screenX = enemy.x - cameraX;
-                const screenY = enemy.y - cameraY;
-                
-                if (screenX > -TILE_SIZE && screenX < canvas.width && screenY > -TILE_SIZE && screenY < canvas.height) {
-                    ctx.font = enemy.isBoss ? '48px Arial' : '32px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(enemyData.emoji, screenX, screenY);
+            Object.values(players).forEach(player => {
+                renderList.push({ kind: 'player', y: player.y, x: player.x, player });
+            });
 
-                    // Barra de HP
-                    const barWidth = enemy.isBoss ? 80 : 40;
-                    const barHeight = 6;
-                    ctx.fillStyle = 'red';
-                    ctx.fillRect(screenX - barWidth/2, screenY - 30, barWidth, barHeight);
-                    ctx.fillStyle = 'lime';
-                    ctx.fillRect(screenX - barWidth/2, screenY - 30, barWidth * (enemy.hp / enemy.maxHp), barHeight);
+            renderList.sort((a, b) => a.y - b.y);
+
+            renderList.forEach(r => {
+                const screenX = r.x - cameraX;
+                const screenY = r.y - cameraY;
+
+                if (r.kind === 'deco') {
+                    if (r.spr.width >= 90) { // casas: sombra maior
+                        ctx.globalAlpha = 0.3;
+                        ctx.fillStyle = '#000';
+                        ctx.beginPath();
+                        ctx.ellipse(screenX, screenY + 4, r.spr.width * 0.45, 10, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    } else {
+                        ctx.globalAlpha = 0.28;
+                        ctx.fillStyle = '#000';
+                        ctx.beginPath();
+                        ctx.ellipse(screenX, screenY + 3, r.spr.width * 0.34, 6, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    }
+                    ctx.drawImage(r.spr, screenX - r.spr.width / 2, screenY - r.spr.height + 6);
+                    return;
+                }
+
+                if (r.kind === 'enemy' || r.kind === 'boss') {
+                    const enemy = r.enemy;
+                    if (screenX < -80 || screenX > canvas.width + 80 || screenY < -80 || screenY > canvas.height + 80) return;
+                    const enemyData = enemy.isBoss ? BOSS_TYPES[enemy.type] : ENEMY_TYPES[enemy.type];
+                    const spr = GFX.getEnemySprite(enemy.type, !!enemy.isBoss, r.vis.facing < 0);
+                    const bob = Math.sin(now / 300 + enemy.x * 0.03) * 2;
+
+                    // sombra
+                    ctx.globalAlpha = 0.35;
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.ellipse(screenX, screenY + (spr ? spr.height * 0.42 : 16), (spr ? spr.width * 0.36 : 14), 5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    // aura de boss
+                    if (enemy.isBoss) {
+                        const pulse = 0.6 + 0.4 * Math.sin(now / 220);
+                        const ag = ctx.createRadialGradient(screenX, screenY, 8, screenX, screenY, 60 * pulse + 30);
+                        ag.addColorStop(0, GFX.getBossAura(enemy.type));
+                        ag.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = ag;
+                        ctx.beginPath();
+                        ctx.arc(screenX, screenY, 60 * pulse + 30, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    if (spr) {
+                        ctx.drawImage(spr, screenX - spr.width / 2, screenY - spr.height / 2 + bob - 4);
+                        // flash claro ao tomar dano (redesenha o sprite em modo aditivo)
+                        if (now < r.vis.flashUntil) {
+                            ctx.save();
+                            ctx.globalAlpha = 0.75;
+                            ctx.globalCompositeOperation = 'lighter';
+                            ctx.drawImage(spr, screenX - spr.width / 2, screenY - spr.height / 2 + bob - 4);
+                            ctx.restore();
+                        }
+                    } else {
+                        ctx.font = enemy.isBoss ? '48px Arial' : '32px Arial';
+                        ctx.fillText(enemyData.emoji, screenX, screenY);
+                    }
+
+                    // barra de HP
+                    const topY = screenY - (spr ? spr.height / 2 : 24) - 10;
+                    const barWidth = enemy.isBoss ? 84 : 40;
+                    const barHeight = enemy.isBoss ? 7 : 5;
+                    const hpPct = Math.max(0, enemy.hp / enemy.maxHp);
+                    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+                    ctx.fillRect(screenX - barWidth / 2 - 1, topY - 1, barWidth + 2, barHeight + 2);
+                    ctx.fillStyle = '#3a0d0d';
+                    ctx.fillRect(screenX - barWidth / 2, topY, barWidth, barHeight);
+                    ctx.fillStyle = hpPct > 0.5 ? '#52d273' : hpPct > 0.25 ? '#f0b429' : '#e5484d';
+                    ctx.fillRect(screenX - barWidth / 2, topY, barWidth * hpPct, barHeight);
 
                     if (enemy.isBoss) {
-                        ctx.font = '12px Arial';
+                        ctx.font = "bold 13px 'Cinzel', serif";
                         ctx.fillStyle = 'white';
                         ctx.strokeStyle = 'black';
                         ctx.lineWidth = 3;
-                        ctx.strokeText(enemyData.name, screenX, screenY - 45);
-                        ctx.fillText(enemyData.name, screenX, screenY - 45);
+                        ctx.strokeText(enemyData.name, screenX, topY - 10);
+                        ctx.fillText(enemyData.name, screenX, topY - 10);
                     }
+                    return;
+                }
+
+                // ── Jogador ──
+                const player = r.player;
+                if (screenX < -60 || screenX > canvas.width + 60 || screenY < -60 || screenY > canvas.height + 60) return;
+                const moving = player.id === myId
+                    ? (player.vx || player.vy)
+                    : (player.targetX !== undefined
+                        ? (Math.abs(player.targetX - player.x) + Math.abs((player.targetY || 0) - player.y) > 1.5)
+                        : (player.vx || player.vy));
+                const frame = moving ? (Math.floor(now / 140) % 2 === 0 ? 1 : 2) : 0;
+                const flip = player.aimAngle !== undefined && Math.abs(player.aimAngle) > Math.PI / 2;
+                const spr = GFX.getHeroSprite(player.class, frame, flip);
+                const bob = moving ? Math.abs(Math.sin(now / 140)) * -2 : Math.sin(now / 700 + (player.id === myId ? 0 : 2)) * 1.2;
+
+                // sombra
+                ctx.globalAlpha = 0.35;
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.ellipse(screenX, screenY + 24, 13, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                if (player.invulnerable && Math.floor(Date.now() / 100) % 2 === 0) {
+                    ctx.globalAlpha = 0.45;
+                }
+
+                // anel de destaque no próprio jogador
+                if (player.id === myId) {
+                    ctx.strokeStyle = 'rgba(240,180,41,0.55)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.ellipse(screenX, screenY + 24, 16, 7, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.drawImage(spr, screenX - spr.width / 2, screenY - spr.height / 2 + bob - 3);
+                ctx.globalAlpha = 1;
+
+                // Nome + tag de clã
+                ctx.font = "bold 13px 'Rajdhani', sans-serif";
+                ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+                ctx.lineWidth = 3;
+                const rarKey2 = CLASS_RARITY[player.class] || 'common';
+                ctx.fillStyle = (RARITY[rarKey2] || RARITY.common).color;
+                const displayName = player.clan ? `[${player.clan}] ${player.name}` : player.name;
+                ctx.strokeText(displayName, screenX, screenY - 36);
+                ctx.fillText(displayName, screenX, screenY - 36);
+
+                // Barra de HP
+                const pBarW = 40, pBarH = 5;
+                const pPct = Math.max(0, player.hp / player.maxHp);
+                ctx.fillStyle = 'rgba(0,0,0,0.65)';
+                ctx.fillRect(screenX - pBarW / 2 - 1, screenY + 29, pBarW + 2, pBarH + 2);
+                ctx.fillStyle = '#3a0d0d';
+                ctx.fillRect(screenX - pBarW / 2, screenY + 30, pBarW, pBarH);
+                ctx.fillStyle = pPct > 0.5 ? '#52d273' : pPct > 0.25 ? '#f0b429' : '#e5484d';
+                ctx.fillRect(screenX - pBarW / 2, screenY + 30, pBarW * pPct, pBarH);
+
+                // Mira (apenas jogador local): seta curta na direção do cursor
+                if (player.id === myId && player.aimAngle !== undefined) {
+                    const ax = Math.cos(player.aimAngle), ay = Math.sin(player.aimAngle);
+                    ctx.save();
+                    ctx.globalAlpha = 0.8;
+                    ctx.strokeStyle = '#f0b429';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX + ax * 22, screenY + ay * 22);
+                    ctx.lineTo(screenX + ax * 34, screenY + ay * 34);
+                    ctx.stroke();
+                    ctx.fillStyle = '#f0b429';
+                    ctx.beginPath();
+                    ctx.arc(screenX + ax * 36, screenY + ay * 36, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
                 }
             });
 
-            // Desenhar jogadores
-            Object.values(players).forEach(player => {
-                const screenX = player.x - cameraX;
-                const screenY = player.y - cameraY;
-                
-                if (screenX > -TILE_SIZE && screenX < canvas.width && screenY > -TILE_SIZE && screenY < canvas.height) {
-                    const classData = CLASSES[player.class];
-                    
-                    // Emoji do jogador
-                    ctx.font = '32px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    
-                    if (player.invulnerable && Math.floor(Date.now() / 100) % 2 === 0) {
-                        ctx.globalAlpha = 0.5;
-                    }
-                    
-                    ctx.fillText(classData.emoji, screenX, screenY);
-                    ctx.globalAlpha = 1;
-
-                    // Nome + tag de clã no canvas
-                    ctx.font = '12px Arial';
-                    ctx.strokeStyle = 'black';
-                    ctx.lineWidth = 3;
-                    const rarKey2 = CLASS_RARITY[player.class] || 'common';
-                    ctx.fillStyle = (RARITY[rarKey2] || RARITY.common).color;
-                    const displayName = player.clan ? `[${player.clan}] ${player.name}` : player.name;
-                    ctx.strokeText(displayName, screenX, screenY - 25);
-                    ctx.fillText(displayName, screenX, screenY - 25);
-
-                    // Barra de HP
-                    const barWidth = 40;
-                    const barHeight = 6;
-                    ctx.fillStyle = 'red';
-                    ctx.fillRect(screenX - barWidth/2, screenY + 20, barWidth, barHeight);
-                    ctx.fillStyle = 'lime';
-                    ctx.fillRect(screenX - barWidth/2, screenY + 20, barWidth * (player.hp / player.maxHp), barHeight);
-
-                    // Mira (apenas jogador local)
-                    if (player.id === myId && player.aimAngle !== undefined) {
-                        ctx.strokeStyle = '#f0a500';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(screenX, screenY);
-                        ctx.lineTo(
-                            screenX + Math.cos(player.aimAngle) * 30,
-                            screenY + Math.sin(player.aimAngle) * 30
-                        );
-                        ctx.stroke();
-                    }
-                }
-            });
-
-            // Desenhar projéteis
+            // ── Projéteis: energia brilhante com rastro ──
+            const PROJ_COLORS = {
+                '🔥': '#ff7a3d', '❄️': '#7fd7ff', '⚡': '#ffe34d', '💀': '#9aff6a',
+                '🌟': '#fff1a8', '💥': '#ffab4d', '🏹': '#e8d8a0', '🗡️': '#dfe6f0',
+                '🎯': '#e8d8a0', '💚': '#6bff95', '🌑': '#b08aff', '👻': '#d8e4ff',
+                '🌀': '#7fd7ff', '💨': '#d8e4ea', '🌸': '#ffb0d0', '🌊': '#5ab8e8',
+                '✨': '#fff1a8', '💫': '#d0b0ff', '🐉': '#ff6a5a', '🐲': '#ff6a5a'
+            };
+            const ARROW_ICONS = { '🏹': 1, '🎯': 1 };
             projectiles.forEach(proj => {
                 const screenX = proj.x - cameraX;
                 const screenY = proj.y - cameraY;
-                
-                if (screenX > -50 && screenX < canvas.width + 50 && screenY > -50 && screenY < canvas.height + 50) {
-                    ctx.font = proj.isSkill ? '28px Arial' : '20px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(proj.icon, screenX, screenY);
+                if (screenX < -50 || screenX > canvas.width + 50 || screenY < -50 || screenY > canvas.height + 50) return;
+                const col = proj.col || PROJ_COLORS[proj.icon] || '#ffd56b';
+                const ang = Math.atan2(proj.vy, proj.vx);
+                ctx.save();
+                if (ARROW_ICONS[proj.icon]) {
+                    // flecha
+                    ctx.translate(screenX, screenY);
+                    ctx.rotate(ang);
+                    ctx.strokeStyle = '#8a6a3e';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(8, 0); ctx.stroke();
+                    ctx.fillStyle = '#dfe6f0';
+                    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(5, -3.5); ctx.lineTo(5, 3.5); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#e8e4da';
+                    ctx.fillRect(-11, -2.5, 4, 2); ctx.fillRect(-11, 0.5, 4, 2);
+                } else {
+                    // rastro
+                    const trailLen = proj.isSkill ? 4 : 3;
+                    for (let t = 1; t <= trailLen; t++) {
+                        ctx.globalAlpha = 0.18 * (1 - t / (trailLen + 1));
+                        ctx.fillStyle = col;
+                        ctx.beginPath();
+                        ctx.arc(screenX - proj.vx * t * 1.6, screenY - proj.vy * t * 1.6, (proj.isSkill ? 8 : 6) * (1 - t * 0.14), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.globalAlpha = 1;
+                    // núcleo
+                    const pg = ctx.createRadialGradient(screenX, screenY, 1, screenX, screenY, proj.isSkill ? 12 : 9);
+                    pg.addColorStop(0, '#ffffff');
+                    pg.addColorStop(0.35, col);
+                    pg.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = pg;
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, proj.isSkill ? 12 : 9, 0, Math.PI * 2);
+                    ctx.fill();
                 }
+                ctx.restore();
             });
-
             // Desenhar efeitos visuais de AOE — iteração reversa para splice seguro
             for (let i = aoeEffects.length - 1; i >= 0; i--) {
                 const fx = aoeEffects[i];
@@ -4507,8 +6275,158 @@
                 if (fx.life <= 0) aoeEffects.splice(i, 1);
             }
 
+            // ── Bandeiras do PvP (desenhadas todo frame agora) ──
+            drawPvPFlags();
+
+            // ── Partículas de combate ──
+            updateDrawParticles(cameraX, cameraY);
+
+            // ── Clima ambiente do bioma atual ──
+            const curBiomeKey = myPlayer
+                ? (myPlayer.y / TILE_SIZE / WORLD_HEIGHT < 0.33 ? 'ice'
+                   : myPlayer.y / TILE_SIZE / WORLD_HEIGHT > 0.66 ? 'desert' : 'grass')
+                : 'grass';
+            updateDrawAmbient(cameraX, cameraY, curBiomeKey, daylight);
+
+            // ── Ciclo dia/noite (tonalidade sutil — nunca escurece demais) ──
+            const nightAmt = (1 - daylight) * 0.38;
+            if (nightAmt > 0.02) {
+                ctx.fillStyle = `rgba(14, 18, 54, ${nightAmt})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            const duskAmt = Math.max(0, 1 - Math.abs(daylight - 0.35) * 6) * 0.14;
+            if (duskAmt > 0.02) { // amanhecer/entardecer alaranjado
+                ctx.fillStyle = `rgba(255, 120, 40, ${duskAmt})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            // ── Vinheta ──
+            const vg = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, Math.min(canvas.width, canvas.height) * 0.45,
+                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.75);
+            vg.addColorStop(0, 'rgba(0,0,0,0)');
+            vg.addColorStop(1, 'rgba(0,0,0,0.34)');
+            ctx.fillStyle = vg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // ── Barra de vida do boss no topo ──
+            updateBossBar();
+
+            // ── Minimapa (tecla M) ──
+            if (minimapOpen) drawMinimap();
+
             // Bússola (sempre por cima de tudo)
             drawCompass();
+        }
+
+        // ══ BARRA DE BOSS (topo da tela) ══
+        function updateBossBar() {
+            const bar = document.getElementById('bossBar');
+            if (!bar) return;
+            let boss = null;
+            for (const e of enemies) {
+                if (e.isBoss && (!boss || e.maxHp > boss.maxHp)) boss = e;
+            }
+            if (!boss) {
+                bar.classList.remove('active');
+                return;
+            }
+            bar.classList.add('active');
+            const data = BOSS_TYPES[boss.type];
+            document.getElementById('bossBarName').textContent = data ? data.name : 'BOSS';
+            document.getElementById('bossBarFill').style.width = `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`;
+        }
+
+        // ══ MINIMAPA (tecla M) ══
+        function drawMinimap() {
+            if (!myPlayer) return;
+            const MW = Math.min(340, canvas.width * 0.6);
+            const MH = MW; // mundo quadrado
+            const mx = (canvas.width - MW) / 2;
+            const my = (canvas.height - MH) / 2;
+            const worldPxW = WORLD_WIDTH * TILE_SIZE;
+            const worldPxH = WORLD_HEIGHT * TILE_SIZE;
+            const toMapX = (wx) => mx + (wx / worldPxW) * MW;
+            const toMapY = (wy) => my + (wy / worldPxH) * MH;
+
+            ctx.save();
+            // painel
+            ctx.fillStyle = 'rgba(6, 8, 18, 0.88)';
+            ctx.strokeStyle = 'rgba(240,180,41,0.7)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(mx - 10, my - 34, MW + 20, MH + 54, 12);
+            ctx.fill();
+            ctx.stroke();
+            ctx.font = "bold 14px 'Cinzel', serif";
+            ctx.fillStyle = '#f0b429';
+            ctx.textAlign = 'center';
+            ctx.fillText('MAPA DO REINO', mx + MW / 2, my - 16);
+
+            // biomas
+            ctx.fillStyle = '#9fd3e8'; ctx.fillRect(mx, my, MW, MH * 0.33);
+            ctx.fillStyle = '#3a6b3e'; ctx.fillRect(mx, my + MH * 0.33, MW, MH * 0.33);
+            ctx.fillStyle = '#c2903a'; ctx.fillRect(mx, my + MH * 0.66, MW, MH * 0.34);
+
+            // lagos e casas
+            decorations.forEach(d => {
+                if (d.lake) {
+                    ctx.fillStyle = '#2a6ab0';
+                    ctx.beginPath();
+                    ctx.arc(toMapX(d.x), toMapY(d.y), Math.max(1.5, d.r * 1.2), 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (d.deco === 'house') {
+                    ctx.fillStyle = '#8a4a2e';
+                    ctx.fillRect(toMapX(d.x) - 1.5, toMapY(d.y) - 1.5, 3, 3);
+                }
+            });
+
+            // inimigos / bosses
+            enemies.forEach(e => {
+                if (e.isBoss) {
+                    ctx.fillStyle = '#ff5c52';
+                    ctx.beginPath();
+                    ctx.arc(toMapX(e.x), toMapY(e.y), 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = 'rgba(229,72,77,0.55)';
+                    ctx.fillRect(toMapX(e.x) - 1, toMapY(e.y) - 1, 2, 2);
+                }
+            });
+
+            // bandeiras PvP
+            if (pvpMode && pvpRunning && typeof pvpFlags === 'object') {
+                [['red', '#e74c3c'], ['blue', '#3498db']].forEach(([team, col]) => {
+                    const f = pvpFlags[team];
+                    if (!f) return;
+                    ctx.fillStyle = col;
+                    ctx.beginPath();
+                    ctx.arc(toMapX(f.x), toMapY(f.y), 4, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            // jogadores
+            Object.values(players).forEach(p => {
+                const self = p.id === myId;
+                ctx.fillStyle = self ? '#ffd56b' : '#7fd7ff';
+                ctx.beginPath();
+                ctx.arc(toMapX(p.x), toMapY(p.y), self ? 4 : 3, 0, Math.PI * 2);
+                ctx.fill();
+                if (self) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            });
+
+            ctx.font = "11px 'Rajdhani', sans-serif";
+            ctx.fillStyle = '#aab3d0';
+            ctx.fillText('❄ Picos Gelados · 🌿 Grama · 🏜 Areia Escaldante — [M] fecha', mx + MW / 2, my + MH + 12);
+            ctx.restore();
         }
 
         // ══ BÚSSOLA ══
@@ -4697,6 +6615,11 @@
                                 nearestPlayer.invulnerableTimer = 30;
 
                                 showDamageNumber(nearestPlayer.x, nearestPlayer.y, damage, false);
+                                if (nearestPlayer.id === myId) {
+                                    SFX.play('hurt');
+                                    addShake(5);
+                                    spawnParticles(myPlayer.x, myPlayer.y, { count: 8, color: ['#e5484d', '#ff8a7a'], speed: 2.5, life: 20, size: 3 });
+                                }
 
                                 if (nearestPlayer.hp <= 0) {
                                     nearestPlayer.hp = 0;
@@ -4794,7 +6717,8 @@
                             } else {
                                 const damage = Math.max(1, proj.damage - enemy.def);
                                 enemy.hp -= damage;
-                                showDamageNumber(enemy.x, enemy.y, damage, false);
+                                showDamageNumber(enemy.x, enemy.y, damage, false, !!proj.crit);
+                                if (proj.crit) { SFX.play('crit'); addShake(4); }
                                 broadcast({ type: 'enemyDamaged', enemyId: enemy.id, hp: enemy.hp });
                             }
                             projectiles.splice(i, 1);
@@ -4823,6 +6747,8 @@
 
             const deltaTime = currentTime - lastTime;
             lastTime = currentTime;
+
+            worldTime++;  // ciclo dia/noite
 
             updatePlayer();
             interpolateRemotePlayers();
